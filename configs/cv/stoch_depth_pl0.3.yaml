@@ -1,0 +1,30 @@
+# E-FAIR-1 — Stochastic Depth p_L sweep (fair-tuning control).
+# Clone of stoch_depth.yaml with stochastic_depth_rate=0.3 (lower-than-paper).
+experiment_name: stoch_depth_pl0.3
+output_dir: ./outputs/cv_stoch_depth_pl0.3
+seed: 42
+
+model:
+  type: resnet
+  base_channels: 16
+  num_blocks: 18
+  num_classes: 100
+  dropout_rate: 0.0
+  stochastic_depth_rate: 0.3
+
+algorithm:
+  type: none
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

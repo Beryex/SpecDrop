@@ -1,0 +1,62 @@
+# Ours — MultiBranch-LoRA + SoftSpecDrop with K=20 Wang 2022 domain clusters.
+# pa / β / SE_ratio are from ablation 8a/8b/8c (auto-filled by main script
+# rtx5090_9 via _best_{pa,beta,se}.txt markers).
+#
+# r_expert (no SE): 16 → total rank 320 → ≈ 225M LoRA params (Llama-3.2-1B).
+# With SE_ratio>0: split_lora_rank_budget_for_se(320, SE_ratio, 20) → (r_e, r_SE)
+# adjusted inline in the shell script before writing the final YAML.
+#
+# pa warmup UNIT = 'step' to match per-step cosine LR schedule (LoRA
+# instruction tuning convention; see design principle in trainer_lora.py).
+model:
+  type: multi_branch_lora
+  base_model_name: meta-llama/Llama-3.2-1B
+  num_experts: 20
+  rank: 16                     # overridden by shell script when SE>0
+  alpha: 32.0                  # 2r
+  dropout: 0.05
+  shared_expert_rank: 0        # overridden by shell script when SE>0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: soft_specdrop
+  p_active: 0.6                # overridden by BEST_PA from 8a
+  p_inactive: 0.4              # = 1 - p_active
+  assignment: round_robin
+  # Pinned to 42 and decoupled from experiment seed so 3-seed std measures
+  # training variance only (same hash_seed/router_seed convention used
+  # across CIFAR / ViT baselines). No effect under round_robin; safer policy.
+  assignment_seed: 42
+  warmup_ratio: 1.0
+  warmup_schedule: cosine
+  warmup_unit: step            # matches per-step LR schedule
+  amplification_beta: 1.0      # overridden by BEST_BETA from 8b
+  # frac_per_category is computed from the K=20 Domain map's train_tasks
+  # distribution at runtime by run_lora.py.
+training:
+  epochs: 3
+  batch_size_per_device: 8
+  grad_accum_steps: 16
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+  # torch.compile retry tried at grad_ckpt=off (Plan B), but dynamo cold
+  # tracing of Llama-3.2-1B + 112 LoRA adapter sites hung past 3 min and
+  # makes the per-run overhead (~10-15 min first-compile cost × 19 runs
+  # in the 8a/b/c/9 chain) eat any potential steady-state speedup. Plan B
+  # alone is already 37% faster than Plan A — ship it, skip compile.
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42

@@ -1,0 +1,48 @@
+# MoCLE (Gou 2024) — E=4 task experts + 1 universal, top-1 gate.
+# Llama-3.2-1B adaptation: same sites as ours (all 7 linear) for apples-to-apples.
+# Total params = 5 experts × single_LoRA(r). For 225M at 5 × 704,512 per rank:
+#   r = 225M / (5 × 704,512 per layer-rank × 16 layers) = 225M / 56,360,960 ≈ 63
+# Gou 2024 Sec 3.3 specifies BGE-large centroid init for cluster embeddings;
+# run_lora.py calls model.init_all_cluster_embeddings(...) when type='mocle'.
+model:
+  type: mocle
+  base_model_name: meta-llama/Llama-3.2-1B
+  num_task_experts: 4
+  # num_clusters aligned with Wang 2022 K=20 domain map (was 64: rows 20..63
+  # were dead storage since cluster_id ∈ [0, 19]).
+  num_clusters: 20
+  rank: 63
+  alpha: 126.0        # 2r
+  dropout: 0.05
+  temperature: 0.05
+  # null → MoCLEAdapter default = 1/E = 0.25 (Gou 2024 Eq. 1 convention).
+  noise_std: null
+  # 1024 = BGE-large-en-v1.5 dim; constant across all 196 wrapped sites so
+  # the same BGE centroid set initialises every adapter's cluster_embeddings.
+  cluster_embed_dim: 1024
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: none
+training:
+  epochs: 3
+  batch_size_per_device: 8
+  grad_accum_steps: 16
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42

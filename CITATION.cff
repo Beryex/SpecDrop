@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization"
+authors:
+  - family-names: Wang
+    given-names: Boyao
+  - family-names: Lei
+    given-names: Zhihan
+repository-code: "https://github.com/Beryex/SpecDrop"
+license: MIT
+preferred-citation:
+  type: article
+  title: "SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization"
+  authors:
+    - family-names: Wang
+      given-names: Boyao
+    - family-names: Lei
+      given-names: Zhihan
+  year: 2026
+  journal: "arXiv preprint"

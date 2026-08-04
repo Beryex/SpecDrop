@@ -1,0 +1,48 @@
+# E2 — Soft MoE re-run with canonical Puigcerver 2023 hyperparameters.
+#
+# Existing soft_moe_vit.yaml used num_experts=32, slots_per_expert=1; got
+# 63.06±0.22% top1 — anomalous vs literature ~76-78%. Two hypotheses:
+# either (a) implementation bug or (b) short-recipe artifact (DeiT 100ep
+# without EMA / RandAug 9-2). This config tries paper-canonical
+# slots_per_expert=2 (Puigcerver Table 3 default) at fresh seed; if PPL
+# still ≈63%, the 63% is a short-recipe artifact (paper disclosure);
+# if PPL jumps to 76%+, slots count is the bug.
+#
+# 1 seed × 100 epochs × 1 GPU ≈ 36h.
+experiment_name: soft_moe_vit_canonical
+output_dir: ./outputs/vit_soft_moe_vit_canonical
+seed: 789                         # fresh seed (s42/123/456 already done with old config)
+
+model:
+  type: soft_moe_vit
+  num_classes: 1000
+  num_experts: 32                 # paper Table 2 default
+  slots_per_expert: 2             # paper Table 3 default (was 1 in existing config)
+  drop_path_rate: 0.1
+
+algorithm:
+  type: none
+
+training:
+  epochs: 100
+  batch_size: 64
+  grad_accum_steps: 4
+  lr: 0.00025
+  optimizer: adamw
+  weight_decay: 0.05
+  betas: [0.9, 0.999]
+  lr_schedule: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.1
+  mixup_alpha: 0.8
+  cutmix_alpha: 1.0
+  mixup_switch_prob: 0.5
+  amp_dtype: bf16
+  _no_compile: true
+  max_grad_norm: 1.0
+
+data:
+  dataset: imagenet
+  data_dir: ./data_cache/imagenet
+  num_workers: 8
+  augmentation: deit

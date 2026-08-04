@@ -1,0 +1,32 @@
+# E3 — Random dropout (no assignment matrix A) with FIXED denominator.
+# Each branch independently kept with prob 0.5; no category conditioning.
+experiment_name: rand_fixed
+output_dir: ./outputs/rtx5090_denom_ablation/rand_fixed
+seed: 42
+
+model:
+  type: multi_branch_resnet110
+  base_channels: 16
+  num_branches: 20
+  branch_channels: [4, 7, 14]
+  num_blocks: 18
+  num_classes: 100
+
+algorithm:
+  type: random_dropout
+  drop_prob: 0.5
+  denom_mode: fixed
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

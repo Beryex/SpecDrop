@@ -1,0 +1,40 @@
+# E4 — Soft SpecDrop with RANDOM assignment matrix A (preempts the
+# "is round-robin special?" robustness question). Same hyperparameters as
+# the ours config; only the A-matrix construction is changed to a
+# random permutation. assignment_seed defaults to cfg.seed in the factory,
+# so each of the 3 experiment seeds (42/123/456) gets a different
+# permutation — that gives 3 distinct random As, isolating the asymmetry
+# (A is one-to-one) from the geometry (round-robin vs random).
+experiment_name: soft_specdrop_random_a
+output_dir: ./outputs/rtx5090_random_a/soft_specdrop_random_a
+seed: 42
+
+model:
+  type: multi_branch_resnet110
+  base_channels: 16
+  num_branches: 20
+  branch_channels: [4, 7, 14]
+  num_blocks: 18
+  num_classes: 100
+
+algorithm:
+  type: soft_specdrop
+  p_active: 0.7
+  p_inactive: 0.3
+  assignment: random
+  warmup_ratio: 1.0
+  # assignment_seed: <inherits seed from cfg.seed>
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

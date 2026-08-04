@@ -1,0 +1,28 @@
+# CIFAR-100 × ResNet-110 dense baseline (rtx5090_2 method [1/6]).
+experiment_name: resnet110
+output_dir: ./outputs/cv_resnet110_baseline
+seed: 42
+
+model:
+  type: resnet
+  base_channels: 16
+  num_blocks: 18
+  num_classes: 100
+  dropout_rate: 0.0
+
+algorithm:
+  type: none
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

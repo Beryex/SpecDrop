@@ -1,0 +1,43 @@
+# 20% ImageNet screen of Mod-Squad ViT — reference pair for the ALF screen
+# (screen pair for the ALF comparison; mod_squad has no 20% number yet). Model/training/data blocks
+# replicated from the DEPLOYED full run
+# (outputs/rtx5090_imagenet_vit_faithful/mod_squad_vit_s42/results.json::config;
+# expert_hidden stays implicit → class default 4*384/16 = 96, as deployed),
+# plus: train_subset_frac 0.2, train_subset_seed 42, screen output dir.
+# Val split stays full 50K.
+experiment_name: mod_squad_vit_screen_s42
+output_dir: ./outputs/alf_screen/mod_squad_vit_screen_s42
+seed: 42
+model:
+  type: mod_squad_vit
+  num_classes: 1000
+  num_experts: 16
+  top_k: 2
+  mi_weight: 0.001
+  drop_path_rate: 0.1
+algorithm:
+  type: none
+training:
+  _compile_mode: reduce-overhead
+  amp_dtype: bf16
+  batch_size: 256
+  cutmix_alpha: 1.0
+  epochs: 100
+  grad_accum_steps: 1
+  label_smoothing: 0.1
+  lr: 0.00025
+  lr_schedule: cosine
+  max_grad_norm: 1.0
+  mixup_alpha: 0.8
+  mixup_switch_prob: 0.5
+  optimizer: adamw
+  warmup_epochs: 5
+  weight_decay: 0.05
+data:
+  augmentation: deit
+  data_dir: ./data_cache/imagenet
+  dataset: imagenet
+  num_workers: 16
+  prefetch_factor: 4
+  train_subset_frac: 0.2
+  train_subset_seed: 42

@@ -1,0 +1,28 @@
+# CIFAR-100 × Example-Tied Dropout (Maini ICML 2023), per-layer channel-wise.
+experiment_name: et_dropout
+output_dir: ./outputs/cv_et_dropout
+seed: 42
+
+model:
+  type: example_tied_dropout_resnet110
+  num_classes: 100
+  num_examples: 50000
+  alpha_mem: 0.5
+  mem_keep_rate: 0.5
+
+algorithm:
+  type: none
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

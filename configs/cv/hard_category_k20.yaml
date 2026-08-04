@@ -1,0 +1,36 @@
+# E3 — DEMix-style hard category routing (metadata-aware baseline).
+# Each of K=20 branches dedicated to one CIFAR-100 superclass. Trains
+# end-to-end with the same MultiBranch + fixed-denom merge pipeline as
+# ours; only the routing mask differs (one-hot vs soft).
+#
+# Why: gives a baseline the same category-metadata access ours receives.
+# This config gives the strongest baseline same metadata SpecDrop uses,
+# routing-by-category at maximum sharpness.
+experiment_name: hard_category_k20
+output_dir: ./outputs/cv_hard_category_k20
+
+model:
+  type: multi_branch_resnet110
+  base_channels: 16
+  num_branches: 20
+  branch_channels: [4, 7, 14]   # same as paper Table 1 ours K=20
+  num_blocks: 18
+  num_classes: 100
+
+algorithm:
+  type: hard_category
+  num_categories: 20            # K=M; one branch per superclass
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

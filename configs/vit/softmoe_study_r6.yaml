@@ -1,0 +1,54 @@
+# Soft MoE tuning study — 20% screen, R6 (compute-matched).
+# Full-width-class experts with multiple slots so that forward compute
+# matches dense ViT-S/16 (8.50 in outputs/analysis/vit_flops.md units)
+# instead of the param-matched baseline's 3.13:
+#   num_experts 32, expert_hidden 1600, slots_per_expert 5
+#   -> 160 total slots ~= 197 tokens (paper's compute knob: total slot
+#      count sets MoE-layer compute; expert count sets params).
+# Measured locally with fvcore (scripts/profile_vit_flops.py pattern,
+# batch 1 @ 224x224):
+#   raw fvcore MACs = 4.257 G  ->  8.514 in the vit_flops table units
+#   (x2 FMA convention), inside the 8.4-8.6 target window.
+#   Total params = 481,230,196 (~481.2M, 21.8x dense ViT-S/16).
+# Params exceed the 22.05M budget BY DESIGN (compute-matched arm,
+# params free to grow) -> skip_param_check: true.
+# Note: with slots_per_expert=1, expert MACs == expert params, so a
+# compute-matched S=1 model would need ~2.7B params — infeasible;
+# slots are the paper-native way to add compute without params.
+experiment_name: softmoe_study_r6
+output_dir: ./outputs/softmoe_study_screen/r6_computematched
+seed: 42
+skip_param_check: true
+model:
+  type: soft_moe_vit
+  num_classes: 1000
+  num_experts: 32
+  expert_hidden: 1600
+  slots_per_expert: 5
+  drop_path_rate: 0.1
+algorithm:
+  type: none
+training:
+  epochs: 100
+  batch_size: 256
+  grad_accum_steps: 1
+  lr: 0.00025
+  optimizer: adamw
+  weight_decay: 0.05
+  lr_schedule: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.1
+  mixup_alpha: 0.8
+  cutmix_alpha: 1.0
+  mixup_switch_prob: 0.5
+  amp_dtype: bf16
+  _compile_mode: reduce-overhead
+  max_grad_norm: 1.0
+data:
+  dataset: imagenet
+  data_dir: ./data_cache/imagenet
+  num_workers: 16
+  prefetch_factor: 4
+  augmentation: deit
+  train_subset_frac: 0.2
+  train_subset_seed: 42

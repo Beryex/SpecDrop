@@ -1,0 +1,42 @@
+# Soft MoE tuning study — 20% screen, R5 (paper-canonical
+# placement). moe_start_block 6: blocks 0-5 are standard dense ViT
+# blocks (full-width 4x MLP), blocks 6-11 are Soft MoE blocks
+# (N=32, h=48) — Puigcerver 2024 replaces only the second half of
+# the network. Param-matched within the 2% budget check.
+experiment_name: softmoe_study_r5
+output_dir: ./outputs/softmoe_study_screen/r5_start6
+seed: 42
+model:
+  type: soft_moe_vit
+  num_classes: 1000
+  num_experts: 32
+  expert_hidden: 48
+  moe_start_block: 6
+  slots_per_expert: 1
+  drop_path_rate: 0.1
+algorithm:
+  type: none
+training:
+  epochs: 100
+  batch_size: 256
+  grad_accum_steps: 1
+  lr: 0.00025
+  optimizer: adamw
+  weight_decay: 0.05
+  lr_schedule: cosine
+  warmup_epochs: 5
+  label_smoothing: 0.1
+  mixup_alpha: 0.8
+  cutmix_alpha: 1.0
+  mixup_switch_prob: 0.5
+  amp_dtype: bf16
+  _compile_mode: reduce-overhead
+  max_grad_norm: 1.0
+data:
+  dataset: imagenet
+  data_dir: ./data_cache/imagenet
+  num_workers: 16
+  prefetch_factor: 4
+  augmentation: deit
+  train_subset_frac: 0.2
+  train_subset_seed: 42

@@ -1,0 +1,55 @@
+# LoRAMoE K=6 experts, APPLIED TO ALL 7 LINEAR MODULES (ablation only).
+# Dou 2023 ACL natively specifies FFN-only (3 MLP targets per layer); our
+# main LoRAMoE config (configs/lora/loramoe.yaml) follows that.
+# This variant matches every other MoE-LoRA baseline's target-module set
+# (all 7 linears: q/k/v/o + gate/up/down) so the paper can cleanly isolate
+# the "routing mechanism" effect from the "target module count" effect.
+#
+# Param budget (GQA-aware Llama-3.2-1B, see utils/sanity_check.py):
+#   per-rank per-layer, 7 sites summed: 44,032
+#   × K=6 experts × 16 layers = 4,227,072 r
+#   per-layer gate params (bias=False, 6 experts): 7×2048×6 = 86,016
+#   × 16 layers = 1,376,256 gate total
+#   r=53 → 4,227,072 × 53 + 1,376,256 = 225,411,072 (−0.01% of 225M target)
+model:
+  type: lora_moe
+  base_model_name: meta-llama/Llama-3.2-1B
+  num_experts: 6
+  rank: 53
+  alpha: 106.0        # 2r
+  dropout: 0.05
+  balance_weight: 0.1
+  # All 7 linear targets — overrides LoRAMoEModel's default of MLP-only.
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: none
+training:
+  epochs: 3
+  # bs=4 / accum=32 (effective_batch=128 invariant) instead of 8/16 because
+  # this variant places K=6 LoRAs across all 7 linear targets (vs FFN-only 3
+  # in the main LoRAMoE config). The K×targets routing intermediate is 2.3×
+  # larger and OOMs at bs=8 on a 32GB 5090 (observed 2026-05-01 step 13: 28.2
+  # GB allocated, needed 1.5 GB more). Halving bs halves that intermediate,
+  # restoring headroom while keeping the effective gradient batch identical
+  # to other methods.
+  batch_size_per_device: 4
+  grad_accum_steps: 32
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42

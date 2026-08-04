@@ -1,0 +1,28 @@
+torch>=2.0
+torchvision>=0.15
+pyyaml>=6.0
+tqdm>=4.60
+numpy>=1.24
+matplotlib>=3.7
+datasets>=2.14
+scipy>=1.11               # Pearson/Spearman + Fisher tests (analysis scripts)
+huggingface_hub>=0.20
+transformers>=4.48        # 4.40+ for Llama-3.2; 4.48+ switches torch_dtype→dtype kwarg (silences deprecation warning). lora_models.py auto-picks the right kwarg for older versions.
+wandb>=0.16
+scikit-learn>=1.3         # KMeans for Phase W semantic clustering
+sentence-transformers>=2.7  # BGE-large embedder for Phase W clustering
+fvcore>=0.1.5             # operator-level MACs counter (scripts/compute_flops_tables.py)
+
+# ── LoRA post-train track (Llama-3.2-1B + SuperNI) ──
+accelerate>=0.30          # HF mixed-precision + device placement helpers
+peft>=0.10                # standard LoRA reference (not required for our custom adapters)
+rouge-score>=0.1.2        # SuperNI eval (ROUGE-L)
+sentencepiece>=0.2        # Llama tokenizer dependency
+# NOTE: attention backend across CIFAR / NLP / ViT / LoRA tracks is uniformly
+# PyTorch's built-in SDPA (F.scaled_dot_product_attention for our custom
+# models; attn_implementation='sdpa' for HF Llama in LoRA). No standalone
+# `flash-attn` pip package is required. PyTorch 2.0+ vendors the flash-
+# attention-2 kernels inside SDPA, so we get the fast path without the
+# build-isolation install dance.
+# ── dev / test ──
+pytest>=7.0               # tests/ harness; required by `python -m pytest tests/`

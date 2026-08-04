@@ -1,0 +1,35 @@
+experiment_name: smoe_dropout
+output_dir: ./outputs/nlp_smoe_dropout
+seed: 42
+model:
+  type: smoe_dropout_transformer_lm
+  vocab_size: 50257
+  hidden_dim: 384
+  num_layers: 6
+  num_heads: 6
+  max_seq_len: 512
+  num_experts: 16
+  ffn_dim_per_expert: 96
+  k_init: 1
+  expert_drop_prob: 0.0
+  dropout: 0.1
+algorithm:
+  type: none
+training:
+  epochs: 10
+  batch_size: 64
+  max_tokens: 500000000
+  lr: 0.0003
+  optimizer: adamw
+  weight_decay: 0.1
+  betas:
+  - 0.9
+  - 0.95
+  lr_schedule: cosine
+  warmup_steps: 1000
+  max_grad_norm: 1.0
+data:
+  dataset: slimpajama
+  data_dir: ./data_cache/slimpajama
+  num_workers: 4
+  max_seq_len: 512

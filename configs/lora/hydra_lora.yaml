@@ -1,0 +1,45 @@
+# HydraLoRA (Tian 2024 NeurIPS) — N=8 native, asymmetric 1A + 8B per site.
+# rank adjusted so total LoRA params ≈ 225M (matches K=20 r=16 MB-LoRA
+# budget on GQA-aware Llama-3.2-1B).
+#
+# Per-site params (A + 8×B + gate[bias=False]) with GQA dims:
+#   q/o_proj  (2048→2048):  r × (2048 + 8×2048) + 2048×8   = 18432 r + 16384
+#   k/v_proj  (2048→ 512):  r × (2048 + 8× 512) + 2048×8   =  6144 r + 16384
+#   gate/up   (2048→8192):  r × (2048 + 8×8192) + 2048×8   = 67584 r + 16384
+#   down      (8192→2048):  r × (8192 + 8×2048) + 8192×8   = 24576 r + 65536
+#   Per layer: r × 208,896 + 163,840
+#   × 16 layers: 3,342,336 r + 2,621,440
+# For 225M budget: r ≈ 67 → 3,342,336×67 + 2,621,440 = 226.6M (+0.49%).
+model:
+  type: hydra_lora
+  base_model_name: meta-llama/Llama-3.2-1B
+  num_B_heads: 8
+  rank: 67
+  alpha: 134.0        # 2r
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: none
+training:
+  epochs: 3
+  batch_size_per_device: 8
+  grad_accum_steps: 16
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42

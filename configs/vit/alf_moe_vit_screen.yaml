@@ -1,0 +1,42 @@
+# 20% ImageNet screen of the ALF MoE ViT (Wang et al. 2024).
+# Identical to configs/vit/alf_moe_vit.yaml except: 20% stratified train
+# subset (train_subset_frac 0.2, train_subset_seed 42 — same convention as
+# the ViT 5a/5b/5c ablation) and screen output dir. Val split stays full 50K.
+# Reference pair: configs/vit/mod_squad_vit_screen.yaml.
+experiment_name: alf_moe_vit_screen_s42
+output_dir: ./outputs/alf_screen/alf_moe_vit_screen_s42
+seed: 42
+model:
+  type: alf_moe_vit
+  num_classes: 1000
+  num_experts: 16
+  expert_hidden: 96
+  top_k: 2
+  bias_update_rate: 0.001
+  drop_path_rate: 0.1
+algorithm:
+  type: none
+training:
+  _compile_mode: reduce-overhead
+  amp_dtype: bf16
+  batch_size: 256
+  cutmix_alpha: 1.0
+  epochs: 100
+  grad_accum_steps: 1
+  label_smoothing: 0.1
+  lr: 0.00025
+  lr_schedule: cosine
+  max_grad_norm: 1.0
+  mixup_alpha: 0.8
+  mixup_switch_prob: 0.5
+  optimizer: adamw
+  warmup_epochs: 5
+  weight_decay: 0.05
+data:
+  augmentation: deit
+  data_dir: ./data_cache/imagenet
+  dataset: imagenet
+  num_workers: 16
+  prefetch_factor: 4
+  train_subset_frac: 0.2
+  train_subset_seed: 42

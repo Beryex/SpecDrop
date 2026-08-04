@@ -1,0 +1,36 @@
+# E3 — Stochastic SpecDrop with FIXED denominator (S = p_a + (K-1)*p_i).
+# Same architecture as ours; mask is Bernoulli-sampled at training.
+# Per the E3 spec, p_active=0.9 / p_inactive=0.1 (sharper than ours' 0.7/0.3).
+experiment_name: stoch_fixed
+output_dir: ./outputs/rtx5090_denom_ablation/stoch_fixed
+seed: 42
+
+model:
+  type: multi_branch_resnet110
+  base_channels: 16
+  num_branches: 20
+  branch_channels: [4, 7, 14]
+  num_blocks: 18
+  num_classes: 100
+
+algorithm:
+  type: stochastic_specdrop
+  p_active: 0.9
+  p_inactive: 0.1
+  assignment: round_robin
+  warmup_ratio: 1.0
+  denom_mode: fixed
+
+training:
+  epochs: 200
+  batch_size: 128
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 5.0e-4
+  lr_schedule: cosine
+  warmup_epochs: 5
+
+data:
+  dataset: cifar100
+  data_dir: ./data_cache
+  num_workers: 4

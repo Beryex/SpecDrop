@@ -1,0 +1,35 @@
+# Single LoRA baseline (Hu 2022 ICLR), r=16 — the PEFT reference point.
+# NOT parameter-matched to ours (11M LoRA vs ours 225M on 1B); shows whether
+# MoE-style routing provides benefit over vanilla PEFT at all.
+model:
+  type: single_lora
+  base_model_name: meta-llama/Llama-3.2-1B
+  rank: 16
+  alpha: 32.0
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: none
+training:
+  epochs: 3
+  batch_size_per_device: 8
+  grad_accum_steps: 16
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42

@@ -1,0 +1,71 @@
+# T2.3 — GPT-2-small-scale (125M) × 500M SlimPajama tokens × 10 epochs × 1 seed.
+#
+# Tests whether the 30M-tied OURS vs matched-SE-scalar result is scale-bound
+# (the scale question).
+#
+# Regime is **identical** to the 30M main-table baselines (500M unique
+# tokens × 10 epochs = 5B token-passes); the ONLY axis varied is model size
+# (30M → 125M, 4×). This makes the cross-scale comparison a one-variable
+# question by construction — no regime-difference confound.
+#
+# Single seed defensible given 30M 3-seed σ_PPL = 0.014-0.099 (4-7× smaller
+# than method effect 0.097). Hyperparams identical to the 500M ours_phaseP
+# main-table cell (pa=0.6, β=4, SE_ratio=0.5, step warmup, K=7) — only
+# model dims (12 layers, 768 hidden, 12 heads) and bs (16 vs 64, OOM fix
+# at 4× model in 31GB) differ.
+#
+# Param budget: ~124M (4× 30M reference). Skips SlimPajama 30M sanity check.
+experiment_name: ours_125m
+output_dir: ./outputs/nlp_ours_125m
+seed: 42
+skip_param_check: true            # 30M ref doesn't apply at this scale
+
+model:
+  type: multi_branch_transformer_lm
+  vocab_size: 50257               # GPT-2 BPE
+  hidden_dim: 768                 # GPT-2 small
+  num_layers: 12
+  num_heads: 12
+  max_seq_len: 512
+  num_branches: 7
+  ffn_dim_per_branch: 410         # split_ffn_budget_for_se(3072, 0.5, 7) → 2867/7≈410
+  shared_expert_dim: 205          # SE = 0.5 × avg_branch
+  dropout: 0.1
+
+algorithm:
+  type: soft_specdrop
+  p_active: 0.6
+  p_inactive: 0.4
+  assignment: round_robin
+  warmup_ratio: 1.0
+  warmup_schedule: cosine
+  warmup_unit: step               # matches LR per-step granularity
+  amplification_beta: 4.0
+
+training:
+  epochs: 10                      # 30M-regime: 500M × 10 epochs = 5B passes
+  # bs=16 (was 64): 125M model at bs=64 OOMs the 31GB 5090 in the K=7
+  # parallel_ffn einsum (bs×T×K×D = 64×512×7×3072 bf16 ≈ 30GB). bs=16
+  # leaves ~15GB activation budget (verified at 1B-pilot run). Effective
+  # batch differs from the 30M baselines (which were bs=64); within-T2.3
+  # comparison stays clean since ours vs matched-SE scalar both run at bs=16.
+  batch_size: 16
+  lr: 0.0003
+  optimizer: adamw
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  lr_schedule: cosine
+  warmup_steps: 1000
+  max_grad_norm: 1.0
+
+data:
+  dataset: slimpajama
+  data_dir: ./data_cache/slimpajama
+  num_workers: 4
+  max_seq_len: 512
+  # Loader reads `data.max_train_tokens` (run_nlp.py:214); the dead
+  # `training.max_tokens` key in legacy NLP configs was never wired and
+  # silently fell back to this default. We pin it explicitly here for
+  # reproducibility — matches the 500M unique tokens used by all 30M
+  # baselines.
+  max_train_tokens: 500000000

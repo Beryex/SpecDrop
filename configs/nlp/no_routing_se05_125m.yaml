@@ -1,0 +1,57 @@
+# T2.3 matched-SE scalar — 125M × 500M SlimPajama tokens × 10 epochs × 1 seed.
+# Architecture-and-SE matched control for ours_125m: same K=7 multi-branch
+# Transformer, same FFN budget split (ffn_per_branch=410, SE_dim=205), but
+# routing replaced with NoDropout (uniform 1/K mask, mech-OFF). Direct
+# comparison anchor for "does the 30M-tied result hold at 4× scale?"
+#
+# Regime is **identical** to the 30M main-table `no_routing_se05` baseline
+# (500M unique × 10 epochs = 5B token-passes); the ONLY axis varied is
+# model size (30M → 125M).
+#
+# Algebraically equivalent to ours under SoftSpecDrop pa=pi (uniform fallback).
+# 30M reference: PPL 45.28 vs ours 45.38 (+0.10 PPL, z=+1.64σ).
+#
+# Single seed × 10 epochs × 500M tokens × bs=16 ≈ 25h on 1 GPU.
+experiment_name: no_routing_se05_125m
+output_dir: ./outputs/nlp_no_routing_se05_125m
+seed: 42
+skip_param_check: true            # 30M ref doesn't apply at this scale
+
+model:
+  type: multi_branch_transformer_lm
+  vocab_size: 50257
+  hidden_dim: 768
+  num_layers: 12
+  num_heads: 12
+  max_seq_len: 512
+  num_branches: 7
+  ffn_dim_per_branch: 410         # same as ours_125m
+  shared_expert_dim: 205          # same as ours_125m (SE_ratio=0.5)
+  dropout: 0.1
+
+algorithm:
+  type: no_dropout                # mech-OFF (uniform 1/K mask)
+
+training:
+  epochs: 10                      # 30M-regime: 500M × 10 epochs = 5B passes
+  # bs=16 (was 64): same OOM-fix as ours_125m.yaml — 125M model in 31GB
+  # 5090 cannot fit bs=64. ours vs scalar both at bs=16 for clean
+  # within-T2.3 comparison.
+  batch_size: 16
+  lr: 0.0003
+  optimizer: adamw
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  lr_schedule: cosine
+  warmup_steps: 1000
+  max_grad_norm: 1.0
+
+data:
+  dataset: slimpajama
+  data_dir: ./data_cache/slimpajama
+  num_workers: 4
+  max_seq_len: 512
+  # Loader reads `data.max_train_tokens` (run_nlp.py:214); the dead
+  # `training.max_tokens` key in legacy configs was never wired and silently
+  # fell back to this default. Pinned explicitly here for reproducibility.
+  max_train_tokens: 500000000

@@ -1,0 +1,37 @@
+# Single LoRA capacity-matched UPPER BOUND: r=320 = K=20 × r=16 total rank.
+# Total trainable LoRA params = 320 × 704,512 = 225,443,840 (bit-identical
+# to ours at K=20, r=16 on GQA-aware Llama-3.2-1B) — the KEY CONTROL.
+# Any gain of ours over this baseline is attributable to the MoE structure
+# (per-expert specialisation) beyond raw capacity.
+model:
+  type: single_lora
+  base_model_name: meta-llama/Llama-3.2-1B
+  rank: 320
+  alpha: 640.0
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  torch_dtype: bfloat16
+  attn_implementation: sdpa
+algorithm:
+  type: none
+training:
+  epochs: 3
+  batch_size_per_device: 8
+  grad_accum_steps: 16
+  lr: 2.0e-4
+  warmup_ratio_lr: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  max_seq_len: 1024
+  amp_dtype: bf16
+  log_interval: 20
+  eval_interval_epochs: 1
+data:
+  data_root: ./data_cache/lora/natural-instructions
+  num_workers: 4
+  num_clusters: 20
+  subset_frac_train: 1.0
+  instances_per_task_train: 100
+  instances_per_task_eval: 100
+  cluster_cache_dir: ./data_cache/lora
+seed: 42
