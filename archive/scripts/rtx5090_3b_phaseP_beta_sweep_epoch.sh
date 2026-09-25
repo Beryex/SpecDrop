@@ -1,6 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # RTX 5090 Script 3b: NLP mini-ablation — β sweep at Phase P anchor, best pa.
+# Batch 32 below is what these runs trained at: they predate the 2026-04-24 run_nlp.py
+# change, before which training.batch_size (64 here originally) was ignored and 32 used.
 #
 # Runs AFTER 3a. Determines best_pa from 3a's 3-seed means (tie-break: larger
 # pa wins). If best_pa = 0.5, β sweep is skipped entirely because g = pa − pi
@@ -115,7 +117,7 @@ cfg = {
                    'assignment': 'round_robin', 'warmup_ratio': 1.0,
                    'frac_per_category': fracs, 'amplification_beta': BETA,
                    'warmup_schedule': 'cosine'},
-    'training': {'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw',
+    'training': {'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw',
                   'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000,
                   'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'},
     'data': {'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama',

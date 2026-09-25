@@ -1,6 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # RTX 5090 Script 3b: NLP mini-ablation — Phase B (warmup_ratio sweep).
+# Batch 32 below is what these runs trained at: they predate the 2026-04-24 run_nlp.py
+# change, before which training.batch_size (64 here originally) was ignored and 32 used.
 #
 # Reads Phase A across ALL 3 seeds (filesystem barrier), picks BEST_PA, then
 # sweeps wr ∈ {0.2, 0.5, 1.0} at (BEST_PA, pi=1-BEST_PA, no SE).
@@ -74,7 +76,7 @@ echo " Fixed: pa=$BEST_PA, pi=$BEST_PI (from Phase A)"
 echo " $(date)"
 echo "============================================================"
 
-COMMON_TRAINING="'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw', 'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000, 'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'"
+COMMON_TRAINING="'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw', 'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000, 'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'"
 COMMON_DATA="'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama', 'num_workers': 4, 'max_seq_len': 512, 'max_train_tokens': 100000000"
 LM_SHARED="'vocab_size': 50257, 'hidden_dim': 384, 'num_layers': 6, 'num_heads': 6, 'max_seq_len': 512"
 BASE_MODEL="'type': 'multi_branch_transformer_lm', $LM_SHARED, 'num_branches': 7, 'ffn_dim_per_branch': 220, 'dropout': 0.1"

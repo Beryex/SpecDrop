@@ -1,6 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # RTX 5090 Script 3q: NLP mini-ablation — Phase Q (SE ratio sweep at Phase D
+# Batch 32 below is what these runs trained at: they predate the 2026-04-24 run_nlp.py
+# change, before which training.batch_size (64 here originally) was ignored and 32 used.
 # root: uniform branches + scalar routing + wr=0, pa ∈ {0.5, 0.6}).
 #
 # Motivation. Phase D (uniform + SE=1.0 + scalar + wr=0) is currently the
@@ -65,7 +67,7 @@ cfg = {
     },
     'algorithm': {'type': 'soft_specdrop', 'p_active': PA, 'p_inactive': PI,
                    'assignment': 'round_robin', 'warmup_ratio': 0.0},
-    'training': {'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw',
+    'training': {'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw',
                   'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000,
                   'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'},
     'data': {'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama',

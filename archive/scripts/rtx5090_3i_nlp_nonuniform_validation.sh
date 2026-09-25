@@ -1,6 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # RTX 5090 Script 3i: NLP non-uniform branch validation.
+# Batch 32 below is what these runs trained at: they predate the 2026-04-24 run_nlp.py
+# change, before which training.batch_size (64 here originally) was ignored and 32 used.
 #
 # Single-cell validation of the data-proportional ffn_dims_per_branch idea.
 # Uses CIFAR-optimal hyperparameters (pa=0.7, wr=1.0, SE=0) with per-branch
@@ -103,7 +105,7 @@ cfg = {
         'assignment': 'round_robin', 'warmup_ratio': 1.0,
     },
     'training': {
-        'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw',
+        'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw',
         'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000,
         'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead',
     },

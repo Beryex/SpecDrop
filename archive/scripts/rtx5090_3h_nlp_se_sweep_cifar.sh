@@ -1,6 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # RTX 5090 Script 3h: NLP mini-ablation — Phase H (SE ratio sweep at
+# Batch 32 below is what these runs trained at: they predate the 2026-04-24 run_nlp.py
+# change, before which training.batch_size (64 here originally) was ignored and 32 used.
 # BEST_PA_F, BEST_WR_G). Step 3 of CIFAR-optimal-defaults chain (F → G → H).
 #
 # Barriers on Phase F + G. Picks BEST_PA_F from Phase F, BEST_WR_G from
@@ -101,7 +103,7 @@ echo " Fixed: pa=$BEST_PA pi=$BEST_PI (Phase F), wr=$BEST_WR (Phase F|G)"
 echo " $(date)"
 echo "============================================================"
 
-COMMON_TRAINING="'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw', 'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000, 'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'"
+COMMON_TRAINING="'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw', 'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000, 'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'"
 COMMON_DATA="'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama', 'num_workers': 4, 'max_seq_len': 512, 'max_train_tokens': 100000000"
 LM_SHARED="'vocab_size': 50257, 'hidden_dim': 384, 'num_layers': 6, 'num_heads': 6, 'max_seq_len': 512"
 
