@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """Verify that grouped conv produces identical training outcomes.
 
-Runs 20 epochs of training with both FullMultiBranchResNet (for-loop) and
-GroupedFullMultiBranchResNet (grouped conv) using identical seeds, data, and
+Runs 20 epochs of training with both MultiBranchResNet110 (for-loop) and
+GroupedMultiBranchResNet110 (grouped conv) using identical seeds, data, and
 hyperparameters. Compares final accuracy, loss trajectory, and per-epoch metrics.
 
 This is the strongest evidence that the optimization is lossless — more
 convincing than any numerical tolerance analysis.
 
 Usage:
-    python tests/test_grouped_training_equivalence.py [--device cuda] [--epochs 20]
+    python archive/tests/test_grouped_training_equivalence.py [--device cuda] [--epochs 20]
 """
 
 import sys
@@ -18,13 +18,13 @@ import argparse
 import json
 import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.multi_branch import FullMultiBranchResNet, GroupedFullMultiBranchResNet
+from models.multi_branch import MultiBranchResNet110, GroupedMultiBranchResNet110
 from algorithms import build_algorithm
 from data.cifar100 import get_dataloaders
 
@@ -35,7 +35,7 @@ def train_one_epoch(model, train_loader, optimizer, criterion, algo, device, epo
     correct = 0
     total = 0
 
-    for images, labels, coarse_labels in train_loader:
+    for images, labels, coarse_labels, _ in train_loader:
         images, labels = images.to(device), labels.to(device)
         coarse_labels = coarse_labels.to(device)
 
@@ -62,7 +62,7 @@ def evaluate(model, test_loader, criterion, algo, device):
     correct = 0
     total = 0
 
-    for images, labels, coarse_labels in test_loader:
+    for images, labels, coarse_labels, _ in test_loader:
         images, labels = images.to(device), labels.to(device)
         coarse_labels = coarse_labels.to(device)
 
@@ -158,14 +158,14 @@ def main():
     print("=" * 60)
     print(" Training: FullMultiBranchResNet (for-loop)")
     print("=" * 60)
-    metrics_fl, time_fl = run_training(FullMultiBranchResNet, "for-loop", args)
+    metrics_fl, time_fl = run_training(MultiBranchResNet110, "for-loop", args)
 
     # Run grouped version
     print()
     print("=" * 60)
     print(" Training: GroupedFullMultiBranchResNet (grouped conv)")
     print("=" * 60)
-    metrics_gr, time_gr = run_training(GroupedFullMultiBranchResNet, "grouped", args)
+    metrics_gr, time_gr = run_training(GroupedMultiBranchResNet110, "grouped", args)
 
     # Compare
     print()

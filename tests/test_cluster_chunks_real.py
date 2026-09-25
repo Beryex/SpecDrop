@@ -43,6 +43,17 @@ TINY_EMBEDDER = 'sentence-transformers/all-MiniLM-L6-v2'  # 22 MB, fast
                       'run `pip install -r requirements.txt`')
 class TestRealEndToEnd(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Needs the gpt2 tokenizer and the tiny embedder from the Hugging Face
+        # Hub; skip (rather than fail) when they cannot be fetched, e.g. offline.
+        try:
+            from huggingface_hub import snapshot_download
+            snapshot_download('gpt2', allow_patterns=['*.json', '*.txt'])
+            snapshot_download(TINY_EMBEDDER)
+        except Exception as e:  # network / hub errors
+            raise unittest.SkipTest(f'Hugging Face models unavailable: {e}')
+
     def test_full_pipeline_with_real_sbert_model(self):
         """Full train+val build_cluster_cache with a real SentenceTransformer.
         Verifies all 6 cache artifacts exist with correct shapes and dtypes.
