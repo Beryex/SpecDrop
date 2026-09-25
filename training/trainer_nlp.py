@@ -344,7 +344,10 @@ class NLPTrainer:
         total_tokens = 0
         last_lr = self.lr
 
-        # SMoE-Dropout k-schedule: advance once per epoch.
+        # SMoE-Dropout k-schedule: advance once per epoch. NOTE: this isinstance
+        # check is False under torch.compile, so compiled runs (including all
+        # reported ones, paper App. B.2) keep k=k_init during training; eval
+        # always uses k=N. Kept as is so existing configs reproduce the paper.
         from models.smoe_dropout_transformer_lm import SMoEDropoutTransformerLM
         if isinstance(self.model, SMoEDropoutTransformerLM):
             self.model.update_k(epoch=epoch, total_epochs=self.epochs)
@@ -501,9 +504,13 @@ class NLPTrainer:
 
             if _is_faithful_lm(self.model):
                 from models.demix_transformer_lm import DemixTransformerLM
-                # Faithful DEMix inference protocol (Gururangan 2022 Section 3.3):
-                # mixture-of-experts with Bayes posterior P(d|x) ∝ P(x|d)·P(d).
-                # 'oracle' (using domain label) is an upper-bound reference only.
+                # demix_eval_mode='mixture': DEMix posterior-weighted inference
+                # (Gururangan 2022), P(d|x) ∝ P(x|d)·P(d); 'oracle': the document's
+                # domain label selects its expert. The paper reports 'oracle'
+                # (App. B.2). NOTE: the isinstance check below is False when the
+                # model is wrapped by torch.compile, so compiled runs always take
+                # the oracle path; the reported runs were compiled. Kept as is so
+                # existing configs reproduce the reported numbers.
                 demix_eval = self.cfg.get('training', {}).get('demix_eval_mode',
                                                                'mixture')
                 if isinstance(self.model, DemixTransformerLM) and demix_eval == 'mixture':

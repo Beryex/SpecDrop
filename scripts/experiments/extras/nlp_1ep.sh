@@ -120,7 +120,7 @@ run_experiment "demix" "
 cfg = {
     'model': {'type': 'demix_transformer_lm', $LM_SHARED, 'num_domains': 7, 'ffn_dim_per_expert': 220, 'dropout': 0.1},
     'algorithm': {'type': 'none'},
-    'training': {$COMMON_TRAINING, 'demix_eval_mode': 'mixture'},
+    'training': {$COMMON_TRAINING, 'demix_eval_mode': 'oracle'},
     'data': {$COMMON_DATA},
 }"
 

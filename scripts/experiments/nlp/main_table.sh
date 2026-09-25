@@ -145,7 +145,7 @@ cfg = {
     'data': {$COMMON_DATA},
 }"
 
-echo "[4/10] SMoE-Dropout LM (paper-native N=16, fixed random + linear k-schedule 1→N, no expert-dropout)"
+echo "[4/10] SMoE-Dropout LM (paper-native N=16, fixed random router, no expert-dropout; under torch.compile the k-schedule is not applied: trains at k=1, evaluates at k=N, as reported in the paper, App. B.2)"
 run_experiment "smoe_dropout" "
 cfg = {
     'model': {'type': 'smoe_dropout_transformer_lm', $LM_SHARED, 'num_experts': 16, 'ffn_dim_per_expert': 96, 'k_init': 1, 'expert_drop_prob': 0.0, 'dropout': 0.1},
@@ -154,12 +154,12 @@ cfg = {
     'data': {$COMMON_DATA},
 }"
 
-echo "[5/10] DEMix LM (per-document domain→expert, 7 domains; faithful MoE-posterior eval)"
+echo "[5/10] DEMix LM (per-document domain→expert, 7 domains; oracle-domain eval, as reported in the paper, App. B.2)"
 run_experiment "demix" "
 cfg = {
     'model': {'type': 'demix_transformer_lm', $LM_SHARED, 'num_domains': 7, 'ffn_dim_per_expert': 220, 'dropout': 0.1},
     'algorithm': {'type': 'none'},
-    'training': {$COMMON_TRAINING, 'demix_eval_mode': 'mixture'},
+    'training': {$COMMON_TRAINING, 'demix_eval_mode': 'oracle'},
     'data': {$COMMON_DATA},
 }"
 
