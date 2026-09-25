@@ -262,7 +262,7 @@ for m, l in zip(methods, labels):
             ppls.append(json.load(open(path))['best_val_ppl'])
     if ppls:
         mean = sum(ppls)/len(ppls)
-        std = (sum((x-mean)**2 for x in ppls)/len(ppls))**0.5
+        std = (sum((x-mean)**2 for x in ppls)/len(ppls))**0.5  # population std (N), as in paper Tab. 3
         print(f'  {l:38s}: PPL {mean:.2f} +/- {std:.2f}  (n={len(ppls)})')
 "
 echo "Done: $(date)"

@@ -215,7 +215,7 @@ for m, l in zip(methods, labels):
             accs.append(json.load(open(path))['best_top1'])
     if accs:
         mean = sum(accs)/len(accs)
-        std = (sum((x-mean)**2 for x in accs)/len(accs))**0.5
+        std = (sum((x-mean)**2 for x in accs)/max(len(accs)-1, 1))**0.5  # sample std (N-1), as in the paper
         print(f'  {l:15s}: {mean:.2f} +/- {std:.2f}  (n={len(accs)})')
 "
 echo "Done: $(date)"

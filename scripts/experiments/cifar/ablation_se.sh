@@ -185,7 +185,7 @@ for r in ['0', '0.25', '0.5', '1.0', '2.0', '4.0']:
             accs.append(json.load(open(path))['best_top1'])
     if accs:
         mean = sum(accs)/len(accs)
-        std = (sum((x-mean)**2 for x in accs)/len(accs))**0.5
+        std = (sum((x-mean)**2 for x in accs)/max(len(accs)-1, 1))**0.5  # sample std (N-1), as in the paper
         print(f'  SE ratio={r}x: {mean:.2f} +/- {std:.2f} ({len(accs)} seeds)')
 "
 echo "Done: $(date)"

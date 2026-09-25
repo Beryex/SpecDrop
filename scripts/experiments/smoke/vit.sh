@@ -38,7 +38,7 @@ from pathlib import Path
 cache = Path('$IMAGENET_DIR')
 if not cache.exists() or not any(cache.rglob('*.arrow')):
     print('  ⚠ ImageNet cache empty at $IMAGENET_DIR')
-    print('    Pre-populate with: huggingface-cli download ImageNet-1k')
+    print('    Pre-populate with data.imagenet.ensure_downloaded() (HF dataset ILSVRC/imagenet-1k; gated, accept its terms first).')
     print('    HF will otherwise try a 150GB auto-fetch on first run.')
 else:
     print(f'  ImageNet cache present at $IMAGENET_DIR')
