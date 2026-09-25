@@ -255,10 +255,11 @@ def plot_grid(out_base: str):
                 s.set_color('#666')
             if r == 0:
                 ax.set_title(COL_LABELS[c], fontsize=15, pad=8)
-                # Bottom-right diag-argmax annotation on each ours panel.
+                # Top-right diag-argmax annotation on each ours panel (the
+                # diagonal ends bottom-right, so the badge must not sit there).
                 hits, total = DIAG_HITS[c]
-                ax.text(0.975, 0.03, f'diag: {hits}/{total}',
-                          transform=ax.transAxes, ha='right', va='bottom',
+                ax.text(0.975, 0.97, f'diag: {hits}/{total}',
+                          transform=ax.transAxes, ha='right', va='top',
                           fontsize=16, color='black',
                           bbox=dict(boxstyle='round,pad=0.25',
                                      facecolor='white', edgecolor='#888',
