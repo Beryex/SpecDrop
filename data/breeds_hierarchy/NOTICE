@@ -1,0 +1,11 @@
+Third-party files: BREEDS class hierarchy
+
+class_hierarchy.txt, dataset_class_info.json and node_names.txt in this folder
+are unmodified copies of imagenet_class_hierarchy/modified/ from
+MadryLab/BREEDS-Benchmarks (https://github.com/MadryLab/BREEDS-Benchmarks),
+accompanying Santurkar, Tsipras and Madry, "BREEDS: Benchmarks for
+Subpopulation Shift", ICLR 2021. The upstream repository states no license.
+They are redistributed here with attribution, only so that the ImageNet
+BREEDS-46 partition can be rebuilt offline (data/imagenet.py); they are not
+covered by this repository's MIT license, and all rights remain with their
+authors.

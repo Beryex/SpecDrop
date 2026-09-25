@@ -217,7 +217,9 @@ $PYTHON -c "
 import json, os
 methods = ['vit_small','mod_squad_vit','soft_moe_vit','comet_vit',
            'mbvit_no_routing','mbvit_no_routing_se','ours_vit']
-labels  = ['ViT-S','Mod-Squad','Soft MoE','COMET',
+# Soft MoE here is the deployed all-blocks variant (appendix); Tab. 2's tuned and
+# compute-matched Soft MoE and ALF rows come from softmoe_study_finals.sh.
+labels  = ['ViT-S','Mod-Squad','Soft MoE (deployed, App.)','COMET',
            'MB-ViT','MB-ViT+SE','Ours']
 for m, l in zip(methods, labels):
     accs = []
@@ -228,6 +230,6 @@ for m, l in zip(methods, labels):
     if accs:
         mean = sum(accs)/len(accs)
         std = (sum((x-mean)**2 for x in accs)/max(len(accs)-1, 1))**0.5  # sample std (N-1), as in the paper
-        print(f'  {l:15s}: {mean:.2f} +/- {std:.2f}  (n={len(accs)})')
+        print(f'  {l:25s}: {mean:.2f} +/- {std:.2f}  (n={len(accs)})')
 "
 echo "Done: $(date)"
