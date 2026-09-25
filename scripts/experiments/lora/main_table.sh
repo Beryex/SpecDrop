@@ -273,7 +273,7 @@ if best_se not in ('0', '0.0'):
     labels.append(f'MB-LoRA-NoRoute-SE{best_se}')
 methods.append('ours')
 labels.append('Ours')
-print(f"{'Method':20s}  {'CE loss':>14}  {'ROUGE-L':>10}  {'EM':>6}  n")
+print(f"{'Method':20s}  {'CE loss':>15}  {'ROUGE-L':>15}  {'EM':>6}  n")
 for m, l in zip(methods, labels):
     ce, rouge, em = [], [], []
     for s in (42, 123, 456):
@@ -285,17 +285,14 @@ for m, l in zip(methods, labels):
                 rouge.append(d['eval_rouge_l'])
             if d.get('eval_exact_match') is not None:
                 em.append(d['eval_exact_match'])
-    def _fmt(vals, spec):
-        if not vals:
-            return '—'.rjust(14 if '>14' in spec else 10 if '>10' in spec else 6)
+    def _fmt(vals, width, with_sd):
         vals = [v for v in vals if v is not None]
         if not vals:
-            return '—'
+            return '—'.rjust(width)
         m = sum(vals)/len(vals)
-        sd = (sum((x-m)**2 for x in vals)/len(vals))**0.5 if len(vals) > 1 else 0.0
-        if '>14' in spec:
-            return f'{m:.4f}±{sd:.4f}'
-        return f'{m:.4f}'
-    print(f"  {l:18s}  {_fmt(ce, '>14'):>14}  {_fmt(rouge, '>10'):>10}  {_fmt(em, '>6'):>6}  {len(ce)}")
+        # sample std (N-1), as in the paper (Tab. 4: ROUGE-L mean ± std)
+        sd = (sum((x-m)**2 for x in vals)/(len(vals)-1))**0.5 if len(vals) > 1 else 0.0
+        return (f'{m:.4f}±{sd:.4f}' if with_sd else f'{m:.4f}').rjust(width)
+    print(f"  {l:18s}  {_fmt(ce, 15, True)}  {_fmt(rouge, 15, True)}  {_fmt(em, 6, False)}  {len(ce)}")
 EOF
 echo "Done: $(date)"

@@ -196,7 +196,7 @@ for m, l in zip(methods, labels):
             pass
     if ppls:
         mean = sum(ppls)/len(ppls)
-        std = (sum((x-mean)**2 for x in ppls)/len(ppls))**0.5
+        std = (sum((x-mean)**2 for x in ppls)/max(len(ppls)-1, 1))**0.5  # sample std (N-1), as in paper App. E.11
         print(f'  {l:42s}: PPL {mean:.2f} +/- {std:.2f}  (n={len(ppls)})')
 "
 echo "Done: $(date)"

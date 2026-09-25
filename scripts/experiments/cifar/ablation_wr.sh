@@ -21,13 +21,13 @@
 # After all 3 finish, check results:
 #   python -c "
 #   import json, os
-#   for pa in ['0.95','0.9','0.8','0.7','0.6','0.5']:
+#   for wr in ['0.0','0.05','0.1','0.2','0.5','0.75','1.0']:
 #       accs = []
 #       for s in [42,123,456]:
-#           #           p = f'outputs/rtx5090_ablation/ablation_wr{wr}_pa0.7_s{s}/results.json'
+#           p = f'outputs/rtx5090_ablation/ablation_wr{wr}_pa0.7_s{s}/results.json'
 #           if os.path.exists(p): accs.append(json.load(open(p))['best_top1'])
 #       if accs:
-#           m=sum(accs)/len(accs); std=(sum((x-m)**2 for x in accs)/len(accs))**0.5
+#           m=sum(accs)/len(accs); std=(sum((x-m)**2 for x in accs)/(len(accs)-1))**0.5
 #           print(f'  wr={wr}: {m:.2f} +/- {std:.2f} ({len(accs)} seeds)')
 #   "
 #
@@ -122,7 +122,7 @@ for wr in ['0.0', '0.05', '0.1', '0.2', '0.5', '0.75', '1.0']:
             accs.append(json.load(open(path))['best_top1'])
     if accs:
         mean = sum(accs)/len(accs)
-        std = (sum((x-mean)**2 for x in accs)/len(accs))**0.5
+        std = (sum((x-mean)**2 for x in accs)/max(len(accs)-1, 1))**0.5  # sample std (N-1), as in the paper
         print(f'  wr={wr}: {mean:.2f} +/- {std:.2f} ({len(accs)} seeds)')
 "
 echo "Done: $(date)"
