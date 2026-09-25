@@ -26,11 +26,11 @@ cfg = yaml.safe_load(open('configs/nlp/${cfgname}.yaml'))
 cfg['output_dir'] = '$ODIR'
 cfg['seed'] = $seed
 cfg['experiment_name'] = '${cfgname}_s${seed}'
-yaml.dump(cfg, open('/tmp/${cfgname}_s${seed}.yaml', 'w'))
+yaml.dump(cfg, open('$ODIR/_tmp.yaml', 'w'))
 "
     GPU=$((i % NGPU))
     CUDA_VISIBLE_DEVICES=$GPU nohup $PY run_nlp.py \
-      --config /tmp/${cfgname}_s${seed}.yaml --device cuda --no-wandb \
+      --config "$ODIR/_tmp.yaml" --device cuda --no-wandb \
       > "$ODIR/train.log" 2>&1 < /dev/null &
     echo "GPU $GPU <- ${cfgname} s${seed} (pid $!)"
     i=$((i+1))

@@ -5,7 +5,7 @@
 # Designed to be the SINGLE script you run once on a freshly pulled 5090 box
 # to get the entire LoRA pipeline ready. It:
 #   (1) verifies HuggingFace login + gated-model access,
-#   (2) pre-downloads Llama-3.2-1B base + tokenizer (~6 GB, one-time),
+#   (2) pre-downloads Llama-3.2-1B base + tokenizer (~2.5 GB, one-time),
 #   (3) shallow-clones allenai/natural-instructions (~400 MB, one-time),
 #   (4) builds the K=20 Wang 2022 Domains mapping,
 #   (5) pre-tokenizes + caches 3 splits to disk (train-full, train-20%, test)
@@ -18,7 +18,7 @@
 # re-tokenize time in any subsequent run.
 #
 # Runtime on RTX 5090:
-#   (1)-(2) HF auth + model dl:          ~ 3-8 min (gated, 6 GB)
+#   (1)-(2) HF auth + model dl:          ~ 3-8 min (gated, ~2.5 GB)
 #   (3) SuperNI clone:                   ~ 1 min
 #   (4) domain map:                      ~ 5 sec
 #   (5) tokenize train-full/20%/test:    ~ 5-10 min combined (one-time)
@@ -27,8 +27,8 @@
 #   Total:                                ~ 30-40 min one-time
 #
 # Env vars:
-#   HF_TOKEN               (required if `huggingface-cli login` not already
-#                           run on this box; will be passed to transformers)
+#   HF_TOKEN               (required if `hf auth login` has not been run on
+#                           this machine; will be passed to transformers)
 #   BASE_MODEL             (default: meta-llama/Llama-3.2-1B)
 #   DEVICE                 (default: cuda)
 #   SKIP_SMOKE             (default: 0; set to 1 to skip step 6 and only
@@ -54,10 +54,9 @@ echo " $(date)"
 echo "============================================================"
 
 # ── (1) HuggingFace auth check (Llama-3.2-1B is gated) ─────────────────────
-# Uses the huggingface_hub Python SDK directly — this is the canonical path
-# (shared by both `huggingface-cli` and the newer `hf` CLI, and identical to
-# what transformers.AutoModelForCausalLM.from_pretrained uses internally).
-# So this check works whichever CLI you logged in with.
+# Uses the huggingface_hub Python SDK directly: it reads the token that
+# `hf auth login` stores (or HF_TOKEN), exactly as
+# transformers.AutoModelForCausalLM.from_pretrained does internally.
 echo ""
 echo "[1/6] HuggingFace auth check"
 HF_USER=$($PYTHON -c "
@@ -85,9 +84,8 @@ fi
 if [ -z "$HF_USER" ]; then
     echo "  ERROR: not logged in to HuggingFace Hub AND no HF_TOKEN env var set."
     echo "  Required because $BASE_MODEL is a gated model. Options:"
-    echo "    1)  huggingface-cli login    (legacy CLI)"
-    echo "    2)  hf auth login            (new CLI)"
-    echo "    3)  export HF_TOKEN=hf_xxx   (env var, good for non-interactive)"
+    echo "    1)  hf auth login"
+    echo "    2)  export HF_TOKEN=hf_xxx   (env var, good for non-interactive)"
     exit 1
 fi
 echo "  HF auth OK"
@@ -103,7 +101,7 @@ import torch
 name = "$BASE_MODEL"
 print(f"  loading tokenizer {name}...")
 tok = AutoTokenizer.from_pretrained(name)
-print(f"  loading model {name} (bf16) — first run downloads ~6 GB...")
+print(f"  loading model {name} (bf16) — first run downloads ~2.5 GB...")
 # HF transformers 4.48 renamed torch_dtype → dtype (deprecation warning).
 tf_ver = tuple(int(x) for x in transformers.__version__.split('.')[:2])
 dtype_kw = 'dtype' if tf_ver >= (4, 48) else 'torch_dtype'
@@ -117,7 +115,7 @@ n = sum(p.numel() for p in m.parameters())
 print(f"  {name} OK — {n/1e9:.2f} B params")
 PYEOF
 
-# ── (3) SuperNI clone (shallow, ~400 MB — retry + mirror fallback) ──────────
+# ── (3) SuperNI clone (shallow, ~400 MB — retry; optional mirror) ───────────
 echo ""
 echo "[3/6] SuperNI dataset"
 if [ -d "$NI_DIR/tasks" ] && [ -f "$NI_DIR/splits/default/train_tasks.txt" ]; then
@@ -135,16 +133,15 @@ else
     # postBuffer giving up on a ~400 MB fetch).
     GITBUF=(-c http.postBuffer=1048576000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999)
 
-    # Try direct URL twice, then a ghproxy mirror (helps on restricted networks).
-    URLS=(
-        "$NI_REPO"
-        "$NI_REPO"
-        "https://ghproxy.com/$NI_REPO"
-    )
+    # Try the direct URL twice. A third-party mirror is tried only if you opt
+    # in with NI_MIRROR_URL=<clone URL of a mirror you trust> (e.g. on a
+    # restricted network).
+    URLS=("$NI_REPO" "$NI_REPO")
+    if [ -n "${NI_MIRROR_URL:-}" ]; then URLS+=("$NI_MIRROR_URL"); fi
     CLONED=0
     for i in "${!URLS[@]}"; do
         URL="${URLS[$i]}"
-        echo "  attempt $((i+1))/3: git clone --depth 1 $URL"
+        echo "  attempt $((i+1))/${#URLS[@]}: git clone --depth 1 $URL"
         if git "${GITBUF[@]}" clone --depth 1 "$URL" "$NI_DIR" 2>&1 | tail -5; then
             if [ -f "$NI_DIR/splits/default/train_tasks.txt" ]; then
                 CLONED=1
@@ -152,15 +149,16 @@ else
             fi
         fi
         [ -d "$NI_DIR" ] && rm -rf "$NI_DIR"
-        [ $i -lt 2 ] && { echo "  retrying in 5s..."; sleep 5; }
+        [ $i -lt $(( ${#URLS[@]} - 1 )) ] && { echo "  retrying in 5s..."; sleep 5; }
     done
 
     if [ "$CLONED" != "1" ]; then
         cat <<EOF
-  ERROR: SuperNI clone failed after 3 retries.
+  ERROR: SuperNI clone failed after ${#URLS[@]} attempts.
   Options to recover:
     1) Retry this script — transient GitHub flakiness.
-    2) Use a proxy / set HTTP(S)_PROXY then retry.
+    2) Use a proxy / set HTTP(S)_PROXY then retry, or set NI_MIRROR_URL to the
+       clone URL of a mirror you trust.
     3) Local-machine workaround (reliable):
          (on your laptop)  git clone --depth 1 $NI_REPO /tmp/ni
          (on your laptop)  rsync -avz -e "ssh -p <port>" /tmp/ni/ \\
@@ -317,8 +315,9 @@ if [ "$FAILED" = "1" ]; then
     echo "the multi-GPU ablation chain."
 else
     echo "All 6 methods passed. You can now launch the full pipeline:"
-    echo "    bash reproduce.sh lora                            # single-GPU sequential (~290 h)"
-    echo "    # multi-GPU per-seed parallel (3 GPUs, ~95 h):"
+    echo "    bash reproduce.sh lora     # single-GPU sequential: sweep chain ~115 h + main table ~235 h"
+    echo "    # main table only, per-seed parallel on 3 GPUs (~80 h; export the operating point"
+    echo "    # BEST_PA=0.8 BEST_BETA=1 BEST_SE=1.0 if the sweep markers are absent):"
     echo "    CUDA_VISIBLE_DEVICES=0 SEEDS_OVERRIDE=42  bash scripts/experiments/lora/main_table.sh &"
     echo "    CUDA_VISIBLE_DEVICES=1 SEEDS_OVERRIDE=123 bash scripts/experiments/lora/main_table.sh &"
     echo "    CUDA_VISIBLE_DEVICES=2 SEEDS_OVERRIDE=456 bash scripts/experiments/lora/main_table.sh &"

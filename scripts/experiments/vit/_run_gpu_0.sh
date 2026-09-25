@@ -1,5 +1,6 @@
 #!/bin/bash
-# GPU 0 — seed 42. ViT ImageNet ablation chain + main table:
+# GPU 0 — seed 42 (CUDA_VISIBLE_DEVICES defaults to 0; set it to use another GPU).
+# ViT ImageNet ablation chain + main table:
 #   (1) rtx5090_5a: pa sweep @ SE=1.0, β=1 (6 pa × 1 seed = 6 runs)
 #   (2) rtx5090_5b: β sweep @ (best_pa, SE=1.0) (3 new β × 1 seed = 3 runs;
 #       barriers across GPUs on 5a, writes _best_pa.txt)
@@ -22,13 +23,13 @@
 #   6:   7 runs × ~10h  = ~70h
 #   Sequential wall: ~8 days per GPU. 3 GPUs in parallel: ~8 days (each GPU
 #   runs its own seed through the same chain; barriers synchronize at 5b/5c).
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 export PYTHONUNBUFFERED=1
 export PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
 export OPENBLAS_NUM_THREADS=${OPENBLAS_NUM_THREADS:-8}
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-8}
 export MKL_NUM_THREADS=${MKL_NUM_THREADS:-8}
-set -e
+set -eo pipefail   # a failing stage stops the shard despite the `| tee`
 mkdir -p outputs
 
 SEED=42
@@ -47,4 +48,4 @@ SEEDS_OVERRIDE=$SEED \
 SEEDS_OVERRIDE=$SEED \
     bash scripts/experiments/vit/main_table.sh 2>&1 | tee outputs/log_gpu_ViT_0_6_s${SEED}.txt
 
-echo "GPU 3 (seed $SEED) ViT 5a + 5b + 5c + 6 done: $(date)"
+echo "GPU $CUDA_VISIBLE_DEVICES (seed $SEED) ViT 5a + 5b + 5c + 6 done: $(date)"
