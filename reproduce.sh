@@ -7,23 +7,23 @@
 # Targets:
 #   smoke         Quick environment + pipeline validation (all 4 settings; ~30-50 min on a
 #                 first run including one-time dataset downloads, ~10 min warm).
-#   cifar         Table 1: CIFAR-100, 7 methods × 3 seeds × 200 epochs (~18 GPU-hours).
+#   cifar         Table 1: CIFAR-100, 7 methods × 3 seeds × 200 epochs (~22 GPU-hours).
 #   nlp           Table 3: SlimPajama 30M Transformer, 8 table methods + 2 provenance
 #                 configs × 3 seeds × 10 epochs
-#                 × 500M tokens (~150 GPU-hours; SlimPajama tokenize is one-time ~30 min).
+#                 × 500M tokens (~195 GPU-hours; needs the tokenized caches built by the NLP smoke).
 #   vit           Table 2: ImageNet ViT-S/16 K=46 BREEDS, all 9 table rows × 3 seeds × 100 epochs
-#                 (~630 GPU-hours; ImageNet-1K download is one-time, ~150 GB).
+#                 (~850 GPU-hours; ImageNet-1K download is one-time, ~150 GB).
 #   lora          Table 4: SuperNI Llama-3.2-1B + LoRA, 7 methods × 3 seeds × 3 epochs
-#                 (~290 GPU-hours; HF Llama download + SuperNI tasks are one-time).
+#                 (~235 GPU-hours; HF Llama download + SuperNI tasks are one-time).
 #   alignment     Align columns of Tables 1-4: branch-category alignment (~24 GPU-hours
 #                 single-GPU; uses pre-trained checkpoints from cifar/nlp/vit/lora targets).
 #   ablation_<setting>  Run only the (pa, β, SE) sweep ablations for one setting.
 #                       e.g. `bash reproduce.sh ablation_nlp`.
-#   all           cifar + nlp + vit + lora + alignment (≈1100 GPU-hours; multi-GPU strongly
+#   all           cifar + nlp + vit + lora + alignment (≈1300 GPU-hours; multi-GPU strongly
 #                 recommended; see README §Reproducibility).
 #
 # Hardware:
-#   - Single-GPU: 1× RTX 5090 (or any GPU with ≥24 GB VRAM and bf16 support).
+#   - Single-GPU: 1× RTX 5090, 32 GB (other GPUs need enough memory and bf16 support).
 #   - Multi-GPU parallel (per-seed): launch one process per GPU with
 #       CUDA_VISIBLE_DEVICES=<i> SEEDS_OVERRIDE=<seed> bash <chain>.sh
 #     example for CIFAR with 3 GPUs:

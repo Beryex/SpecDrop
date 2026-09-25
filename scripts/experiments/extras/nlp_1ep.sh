@@ -2,8 +2,8 @@
 ###############################################################################
 # RTX 5090 Script 13: 30M SlimPajama Table 3 — 1 epoch (modern LM training).
 #
-# Mirror of scripts/experiments/nlp/main_table.sh's structure with ONE change:
-#   epochs: 10 → epochs: 1
+# Mirror of scripts/experiments/nlp/main_table.sh's structure with two changes
+# (paper App. E.11): epochs: 10 → 1 and batch 32 → 64.
 # Output goes to a SEPARATE directory so the 10-epoch results.json files
 # remain untouched.
 #

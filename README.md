@@ -43,7 +43,7 @@ conda create -n SpecDrop python=3.12 -y
 conda activate SpecDrop
 pip install -r requirements.txt
 ```
-3. (Optional) Verify the environment with a smoke run covering all four settings (~10 min warm; ~30–50 min on a first run). First-run caveat: the smoke itself triggers the one-time dataset downloads — small for CIFAR/LoRA (gated Llama-3.2-1B base + ~400 MB SuperNI clone), large for NLP/ViT (SlimPajama ~24 GB; ImageNet-1K ~150 GB, gated) — so populate the big caches in advance or start with the cifar/lora smokes.
+3. Verify the installation. Without a GPU, run the unit tests (`python -m pytest tests/ -q`). With a CUDA GPU, run the smoke covering all four settings (~10 min warm; ~30–50 min on a first run). First-run caveat: the smoke itself triggers the one-time dataset downloads — small for CIFAR/LoRA (gated Llama-3.2-1B base + ~400 MB SuperNI clone), large for NLP/ViT (SlimPajama ~24 GB; ImageNet-1K ~150 GB, gated) — so populate the big caches in advance or start with the cifar/lora smokes. The NLP smoke also builds the tokenized SlimPajama caches that `reproduce.sh nlp` and `ablation_nlp` expect, so run it before those targets.
 ```bash
 bash reproduce.sh smoke
 ```
@@ -80,14 +80,14 @@ CUDA_VISIBLE_DEVICES=2 SEEDS_OVERRIDE=456 bash scripts/experiments/cifar/main_ta
 wait
 ```
 
-All reported training runs used NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16-capable GPU reproduces them within seed noise.
+All reported training runs used NVIDIA RTX 5090 (32 GB) with mixed precision (bf16; fp16 with loss scaling on CIFAR-100). Other GPUs with enough memory should reproduce them within seed noise; the ImageNet and LoRA runs were sized for 32 GB.
 
 | Setting | Single-GPU wall-clock (3 seeds) | Multi-GPU shortcut |
 |---|---|---|
-| CIFAR-100 (Tab 1) | ~18 h | 3 GPUs × 1 seed each → ~6 h |
-| ImageNet ViT-S/16 (Tab 2) | ~630 h | 3 GPUs → ~210 h (recommended) |
-| SlimPajama 30M LM (Tab 3) | ~150 h | 3 GPUs → ~50 h |
-| SuperNI Llama-1B + LoRA (Tab 4) | ~290 h | 3 GPUs → ~95 h |
+| CIFAR-100 (Tab 1) | ~22 h | 3 GPUs × 1 seed each → ~8 h |
+| ImageNet ViT-S/16 (Tab 2) | ~850 h | 3 GPUs → ~285 h (recommended) |
+| SlimPajama 30M LM (Tab 3) | ~195 h | 3 GPUs → ~65 h |
+| SuperNI Llama-1B + LoRA (Tab 4) | ~235 h | 3 GPUs → ~80 h |
 | Branch–category alignment | ~24 h | 6 GPUs (per-method shards) → ~4 h |
 
 <details>
@@ -100,7 +100,7 @@ All reported training runs used NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16
 │   ├── soft_specdrop.py        # ours (per-cat soft mask + cosine warmup, optional shared expert)
 │   ├── no_dropout.py           # all-branches-equal baseline
 │   ├── hard_category.py        # one-hot category routing baseline
-│   └── ...                     # Soft MoE, Mod-Squad, SMoE-Dropout, Switch, Hash, COMET, ETD, Contextual, Stoch. Depth
+│   └── ...                     # Stochastic SpecDrop, random dropout (App. A); baselines live in models/
 ├── models/                     # per-setting backbones + baseline model classes
 │   ├── multi_branch.py         # MultiBranchResNet110 (K parallel branches, shared stem/head)
 │   ├── multi_branch_vit.py     # MultiBranchViT (K parallel MLPs per block, shared attn)
@@ -112,11 +112,11 @@ All reported training runs used NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16
 ├── data/                       # CIFAR-100 superclasses, BREEDS-46, SlimPajama domains, SuperNI clusters
 ├── training/                   # per-setting trainers (CV / NLP / LoRA)
 ├── evaluation/                 # accuracy, alignment, pruning sensitivity, ROUGE-L, MACs
-├── configs/                    # all hyperparameters as YAML; CLI overrides
+├── configs/                    # per-method YAML templates (the paper runs' exact configs are written by scripts/experiments/)
 ├── scripts/                    # analysis tools + paper-reproduction experiment chains
 │   ├── eval_logit_mask.py      # information-matched logit-masking control
 │   ├── wall_clock_table.py     # per-method wall-clock table
-│   ├── compute_flops_tables.py # per-method MACs (fvcore)
+│   ├── compute_flops_tables.py # per-method MACs (fvcore; closed form for LoRA adapters)
 │   └── experiments/            # per-setting reproduction chains ({cifar,vit,nlp,lora,alignment,smoke})
 ├── tests/                      # 471 unit tests (python -m pytest tests/ -q)
 └── run.py / run_nlp.py / run_lora.py   # per-setting entries
@@ -128,15 +128,42 @@ All reported training runs used NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16
 
 - **Seeds**: 3 fixed seeds (42, 123, 456) for every paper-table cell. Seed scope = training; routing-structure parameters (hash_seed, mask_seed, router_seed) are fixed at 42 across all seeds, decoupling training-noise from routing-structure variance in the 3-seed standard deviation.
 - **Determinism**: `torch.use_deterministic_algorithms(warn_only=True)` + `CUBLAS_WORKSPACE_CONFIG=:4096:8`. Cross-machine top-1 / PPL / ROUGE-L reproduces within seed noise on any RTX 5090; bit-identical reproduction is not claimed.
-- **Param budget**: `utils/sanity_check.py` runs before every training call and crashes if the trainable parameter count is more than 2% off the per-setting reference (CIFAR ResNet-110 1.737 M, ViT-S/16 22.051 M, NLP 30.143 M, Llama-1B + LoRA 225 M).
+- **Param budget**: `utils/sanity_check.py` runs before every training call and crashes if the trainable parameter count is more than 2% (LoRA: 3%) off the per-setting reference (CIFAR ResNet-110 1.737 M, ViT-S/16 22.051 M, NLP 30.143 M, Llama-1B + LoRA 225 M).
 - **Auto-skip on resume**: every reproduction script skips a cell whose `outputs/<run_dir>/results.json` exists (the LoRA chain additionally verifies the relevant metric is populated); re-running a chain after a partial completion only fills in the missing cells.
 - **Tests**: 471 unit tests; `python -m pytest tests/ -q` should be all-green before claiming reproduction.
 - Run-level provenance (per-run `results.json` with per-epoch histories) is available on request.
+- **Configs**: the YAMLs in `configs/` are per-method templates. The exact configuration of every paper run is generated by the scripts in `scripts/experiments/` (operating points, batch sizes, seeds) and saved in each run's output directory.
+- **Batch sizes**: CIFAR 128, ImageNet 256 (ALF and the Mod-Squad screen: 128 × 2 accumulation), SlimPajama 32 (the 1-epoch control 64, the 125M runs 16), SuperNI 8 × 16 accumulation.
+- **Baseline evaluation as reported (paper App. B.2)**: DEMix is evaluated with the document's domain label selecting its expert (`demix_eval_mode: oracle`). SMoE-Dropout's gradual-k schedule is not applied when the model runs under `torch.compile`, as in the reported runs: training uses k=1 and evaluation all 16 experts.
+- **Environment**: developed and unit-tested with Python 3.10, PyTorch 2.10 and transformers 5.5; the unit tests also pass on Python 3.12 with current releases of `requirements.txt`.
 </details>
+
+### Appendix results
+
+Beyond the main tables, the appendix results come from these entry points (run after the corresponding main-table chain; most analysis scripts take `--help`):
+
+| Paper item | Command |
+|---|---|
+| Fig. 4, Tab. 6, App. E.6–E.8 (operating-point sweeps) | `bash reproduce.sh ablation_<cifar\|vit\|nlp\|lora>`; plot: `python scripts/plot_ablation_curves.py` |
+| Tab. 7 (mask × denominator) | `bash scripts/experiments/extras/denom_ablation.sh`, then `python scripts/summarize_e3_denom.py` |
+| App. A.4 (random assignment) | `python run.py --config configs/cv/soft_specdrop_random_a.yaml --output_dir outputs/rtx5090_random_a/s42` (set `seed:` in the YAML to 123 / 456 for the other seeds) |
+| Fig. 1, Fig. 5, Tab. 8 | `bash reproduce.sh alignment`, then `python scripts/plot_intro_specialization.py`, `python scripts/analyze_e2_heatmap.py`, `python scripts/analyze_e1_mi_table.py` |
+| §5.6 (uniform-mask inference) | `bash scripts/experiments/extras/uniform_mask_eval.sh` |
+| App. E.2 (fine-label oracle) | `bash scripts/experiments/extras/fine_label_oracle.sh` |
+| App. E.3, Tab. 9 (logit masking) | `python scripts/eval_logit_mask.py --setting <cifar\|vit> --method <method> --seed <seed>` |
+| App. E.4, Tab. 10 (label quality) | `python scripts/analyze_e5_noise_sweep.py --ps 0 0.05 0.1 0.2 0.25 0.5 1.0`, then `python scripts/inference_robustness_curve.py`; predicted labels: `python scripts/finetune_coarse_classifier.py` and `python scripts/eval_predicted_cluster.py` |
+| App. E.7 (Soft MoE tuning study) | screen arms r0–r6 (seed 42): `bash scripts/experiments/softmoe_study_screen.sh`; other screen cells: `python run.py --config configs/vit/<softmoe_study_r7\|alf_moe_vit_screen\|mod_squad_vit_screen>.yaml` (set `seed:` per run); full-protocol finals: `GPUS="0 1 2" bash scripts/experiments/softmoe_study_finals.sh <config>` |
+| App. E.10 (125M scale) | `bash scripts/launch_125m_seeds.sh` |
+| App. E.11, App. B.2 (1-epoch and batch-64 checks) | `bash scripts/experiments/extras/nlp_1ep.sh`, `bash scripts/experiments/extras/nlp_bs64.sh` |
+| App. E.12–E.14 (LoRA diagnostics) | `python scripts/diagnose_lora_specialization.py`, `python scripts/eval_lora_per_task.py`, `python scripts/lora_per_task_fisher.py` |
+| App. E.15 (embedding diagnostics) | `python scripts/select_optimal_k.py`, `python scripts/embed_cifar100.py`, `python scripts/intra_chunk_heterogeneity.py`, `python scripts/analyze_purity_ppl_correlation.py` |
+| App. F.3 (MACs, wall-clock) | `python scripts/compute_flops_tables.py`, `python -m scripts.profile_vit_flops`, `python scripts/wall_clock_table.py` |
+
+Two appendix items have no script: the Tab. 14 timings are development-time benchmarks on an A100, and the Fig. 6 training curves are the per-epoch histories stored in each run's `results.json`.
 
 ## Datasets
 
-All datasets are fetched automatically on first run (SuperNI via a git clone, everything else via Hugging Face Datasets / Hub); caches go to `data_cache/` (gitignored).
+All datasets are fetched automatically on first run (CIFAR-100 via torchvision, SuperNI via a git clone, everything else via Hugging Face Datasets / Hub); caches go to `data_cache/` (gitignored).
 
 | Dataset | Source | Size | First-run time |
 |---|---|---|---|
@@ -145,7 +172,7 @@ All datasets are fetched automatically on first run (SuperNI via a git clone, ev
 | SlimPajama-6B | HF `DKYoon/SlimPajama-6B` | ~24 GB download; ~12 GB tokenized at seq=512 | ~30 min tokenize at 500M tokens |
 | SuperNI v2 | git clone of `allenai/natural-instructions` (automatic; task JSONs with the Domains fields we need) | ~400 MB | ~2 min |
 | Llama-3.2-1B | HF `meta-llama/Llama-3.2-1B` | ~2.5 GB | ~3 min (requires HF gated-model access) |
-| BREEDS hierarchy | bundled at `data/breeds_hierarchy/` | <1 MB | n/a |
+| BREEDS hierarchy | bundled at `data/breeds_hierarchy/` (hierarchy metadata from [MadryLab/BREEDS-Benchmarks](https://github.com/MadryLab/BREEDS-Benchmarks), Santurkar et al., ICLR 2021) | <1 MB | n/a |
 
 ## Results
 

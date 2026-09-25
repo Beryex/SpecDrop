@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""T2.2 — Fisher exact / chi-square test on per-task ROUGE Δ × Wang 2022 cluster_id.
+"""T2.2 — Fisher exact / chi-square test on per-task ROUGE Δ × Domain-field cluster_id (paper App. B.4).
 
 For each of the 119 SuperNI held-out tasks at s42, compute Δ = ours − HydraLoRA,
 classify each task as ours-wins / Hydra-wins / tied (within ε), then test for
-association with the task's Wang 2022 cluster_id.
+association with the task's Domain-field cluster_id.
 
-Motivating check: if crossing the per-task win pattern with the Wang 2022
+Motivating check: if crossing the per-task win pattern with the Domain-field
 cluster IDs yields Fisher-exact p<0.05, the granularity-alignment evidence
 scales from n=4 settings to n=119 tasks. Goal: show that the ours-wins
 distribution across clusters is non-uniform (clusters where ours dominates
