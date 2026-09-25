@@ -9,7 +9,9 @@ split once, and report top-1 under BOTH decodings from the same logits:
   (b) masked  — argmax restricted to fine classes belonging to the sample's
       coarse category (logits of out-of-category classes set to -inf).
 The mask is applied symmetrically to every method, so (b)-(a) isolates the
-benefit of output-space reduction from the benefit of routing.
+benefit of output-space reduction from the benefit of routing. The JSON also
+counts the unmasked predictions that fall outside the sample's coarse
+category (n_pred_outside_category; App. E.3 quotes it for CIFAR).
 
 Methods:
   cifar: dense (resnet110) / no_routing / ours   [ours ckpt lives in the
@@ -186,7 +188,7 @@ def main():
     num_coarse = 20 if args.setting == 'cifar' else 46
     allowed = _coarse_to_fine_allowed(args.setting, num_fine, num_coarse).to(args.device)
 
-    correct_u = correct_m = total = 0
+    correct_u = correct_m = total = outside = 0
     with torch.no_grad():
         for batch in loader:
             x, y, c = batch[0], batch[1], batch[2]
@@ -203,6 +205,7 @@ def main():
             pred_m = masked.argmax(dim=-1)
             correct_u += (pred_u == y).sum().item()
             correct_m += (pred_m == y).sum().item()
+            outside += (~allowed[c, pred_u]).sum().item()
             total += y.numel()
 
     top1_u = 100.0 * correct_u / max(1, total)
@@ -212,6 +215,7 @@ def main():
         'src_run_dir': run_dir, 'src_metric': src_top1,
         'top1_unmasked': top1_u, 'top1_masked': top1_m,
         'mask_gain': top1_m - top1_u, 'n_eval': total,
+        'n_pred_outside_category': outside,
         'metric_name': 'top1_acc',
     }
     os.makedirs(out_dir, exist_ok=True)
@@ -219,7 +223,7 @@ def main():
         json.dump(payload, f, indent=2)
     print(f'[logit_mask][{args.setting} {args.method} s{args.seed}] '
           f'unmasked={top1_u:.2f} (src={src_top1}) masked={top1_m:.2f} '
-          f'gain={top1_m - top1_u:+.2f} -> {out_path}')
+          f'gain={top1_m - top1_u:+.2f} outside-category={outside}/{total} -> {out_path}')
 
 
 if __name__ == '__main__':
