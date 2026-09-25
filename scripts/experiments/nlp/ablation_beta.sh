@@ -48,6 +48,27 @@ OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
+# Barrier timeout (seconds) for `scripts.ablation_chain wait`. The default,
+# 72 h, is about twice one GPU's share of the longest sweep phase (ViT 5a:
+# 6 cells of ~6 h); a barrier whose cells never finish (a failed run) now
+# stops the chain with an error instead of waiting forever. Override with
+# CHAIN_MAX_WAIT=<seconds>.
+CHAIN_MAX_WAIT=${CHAIN_MAX_WAIT:-259200}
+chain_wait_failed() {
+    echo "ERROR: ablation-chain barrier timed out after ${CHAIN_MAX_WAIT}s: a cell of the"
+    echo "       previous phase never wrote its results.json (check that cell's log)."
+    exit 1
+}
+
+# Config generation must fail loudly: it raises when the tokenized cache is
+# missing, and running on would leave the next chain stage waiting for
+# results.json files that are never written.
+cfg_gen_failed() {
+    echo "ERROR: config generation failed for $1. Is the 100M-token tokenized"
+    echo "       SlimPajama cache in ./data_cache/slimpajama? (scripts/experiments/smoke/nlp.sh builds it)"
+    exit 1
+}
+
 mkdir -p "$OUTDIR_BASE"
 
 # ── Barrier on 3a@SE=0, auto-detect best_pa + anchor_SE ───────────────────
@@ -55,7 +76,7 @@ if [ -z "$ANCHOR_SE" ] && [ -z "$BEST_PA" ]; then
     echo "[3b] Waiting for 3a@SE=0 to complete (18 results.json files)..."
     $PYTHON -m scripts.ablation_chain wait --phase 3a --base "$OUTDIR_BASE" \
         --seeds 42,123,456 --pa-values 0.5,0.6,0.7,0.8,0.9,1.0 \
-        --anchor-se 0 --poll 60
+        --anchor-se 0 --poll 60 --max-wait "$CHAIN_MAX_WAIT" || chain_wait_failed
 
     # Literal argmin (no exclusion) — if pa=0.5 wins, SE=0 is not the regime.
     LITERAL_SE0=$($PYTHON -m scripts.ablation_chain best --phase 3a --base "$OUTDIR_BASE" \
@@ -78,7 +99,7 @@ if [ -z "$ANCHOR_SE" ] && [ -z "$BEST_PA" ]; then
         echo "[3b] Waiting for 3a@SE=1.0 to complete on all 3 GPUs..."
         $PYTHON -m scripts.ablation_chain wait --phase 3a --base "$OUTDIR_BASE" \
             --seeds 42,123,456 --pa-values 0.5,0.6,0.7,0.8,0.9,1.0 \
-            --anchor-se 1.0 --poll 60
+            --anchor-se 1.0 --poll 60 --max-wait "$CHAIN_MAX_WAIT" || chain_wait_failed
 
         # Exclude pa=0.5 (degenerate) from the mechanism-active argmin.
         BEST_PA=$($PYTHON -m scripts.ablation_chain best --phase 3a --base "$OUTDIR_BASE" \
@@ -140,7 +161,8 @@ run_beta() {
         fi
     fi
     mkdir -p "$ODIR"
-    ODIR=$ODIR ENAME=$ENAME SEED=$SEED PA=$BEST_PA PI=$PI BETA=$BETA ANCHOR_SE=$ANCHOR_SE \
+    rm -f "${ODIR}/_tmp.yaml"
+    if ! ODIR=$ODIR ENAME=$ENAME SEED=$SEED PA=$BEST_PA PI=$PI BETA=$BETA ANCHOR_SE=$ANCHOR_SE \
         $PYTHON - <<'PYEOF'
 import os, yaml
 from data.slimpajama import (
@@ -188,6 +210,10 @@ cfg = {
 with open(os.path.join(ODIR, '_tmp.yaml'), 'w') as f:
     yaml.dump(cfg, f)
 PYEOF
+    then
+        cfg_gen_failed "$ENAME"
+    fi
+    [ -f "${ODIR}/_tmp.yaml" ] || cfg_gen_failed "$ENAME"
     echo "  Running $ENAME ... ($(date))"
     $PYTHON run_nlp.py --wandb --config "${ODIR}/_tmp.yaml" --device $DEVICE 2>&1 | tee "${ODIR}/${ENAME}.log"
     echo "  $ENAME finished: $(date)"

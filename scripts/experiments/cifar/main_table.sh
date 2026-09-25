@@ -23,6 +23,16 @@ OUTDIR_BASE="./outputs/rtx5090_cifar100_faithful"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
+# Every cell writes the same per-seed tmp YAML: remove it before generating
+# and stop if generation fails, so a stale YAML from the previous cell is
+# never trained under this cell's name.
+cfg_gen_check() {  # <exit status> <yaml> <cell>
+    if [ "$1" -ne 0 ] || [ ! -f "$2" ]; then
+        echo "ERROR: config generation failed for $3 ($2 not written). Stopping."
+        exit 1
+    fi
+}
+
 mkdir -p "$OUTDIR_BASE"
 echo "============================================================"
 echo " CIFAR-100 × ResNet-110 FAITHFUL (7 methods × ${#SEEDS[@]} seeds)"
@@ -43,6 +53,7 @@ run_experiment() {
         fi
         mkdir -p "$ODIR"
         echo "  Running $ENAME ... ($(date))"
+        rm -f "$OUTDIR_BASE/_tmp_s${SEED}.yaml"
         $PYTHON -c "
 import yaml
 $CONFIG_GEN
@@ -51,6 +62,7 @@ cfg['seed'] = $SEED
 cfg['experiment_name'] = '$ENAME'
 yaml.dump(cfg, open('$OUTDIR_BASE/_tmp_s${SEED}.yaml', 'w'))
 "
+        cfg_gen_check $? "$OUTDIR_BASE/_tmp_s${SEED}.yaml" "$ENAME"
         $PYTHON run.py --wandb --config "$OUTDIR_BASE/_tmp_s${SEED}.yaml" --device $DEVICE 2>&1 | tee "${OUTDIR_BASE}/${ENAME}.log"
         echo "  $ENAME finished: $(date)"
     done
@@ -117,6 +129,7 @@ for SEED in "${SEEDS[@]}"; do
         echo "  hard_category_s${SEED} — DONE, skipping"; continue
     fi
     mkdir -p "$ODIR"
+    rm -f "${OUTDIR_BASE}/_tmp_hc_s${SEED}.yaml"
     $PYTHON -c "
 import yaml
 cfg = yaml.safe_load(open('configs/cv/hard_category_k20.yaml'))
@@ -125,6 +138,7 @@ cfg['seed'] = $SEED
 cfg['experiment_name'] = 'hard_category_s${SEED}'
 yaml.dump(cfg, open('${OUTDIR_BASE}/_tmp_hc_s${SEED}.yaml', 'w'))
 "
+    cfg_gen_check $? "${OUTDIR_BASE}/_tmp_hc_s${SEED}.yaml" "hard_category_s${SEED}"
     $PYTHON run.py --wandb --config "${OUTDIR_BASE}/_tmp_hc_s${SEED}.yaml" --device $DEVICE 2>&1 | tee "./outputs/cv_hard_category_k20/hard_category_s${SEED}.log"
 done
 

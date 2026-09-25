@@ -41,6 +41,16 @@ OUTDIR_BASE="./outputs/rtx5090_ablation"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
+# Every cell writes the same per-seed tmp YAML: remove it before generating
+# and stop if generation fails, so a stale YAML from the previous cell is
+# never trained under this cell's name.
+cfg_gen_check() {  # <exit status> <yaml> <cell>
+    if [ "$1" -ne 0 ] || [ ! -f "$2" ]; then
+        echo "ERROR: config generation failed for $3 ($2 not written). Stopping."
+        exit 1
+    fi
+}
+
 mkdir -p "$OUTDIR_BASE"
 
 echo "============================================================"
@@ -58,6 +68,7 @@ run_one() {
     fi
     mkdir -p "$ODIR"
     echo "  Running $ENAME ... ($(date))"
+    rm -f "$OUTDIR_BASE/_tmp_s${SEED}.yaml"
     $PYTHON -c "
 import yaml
 cfg = {
@@ -97,6 +108,7 @@ cfg = {
 }
 yaml.dump(cfg, open('$OUTDIR_BASE/_tmp_s${SEED}.yaml', 'w'))
 "
+    cfg_gen_check $? "$OUTDIR_BASE/_tmp_s${SEED}.yaml" "$ENAME"
     $PYTHON run.py --wandb --config "$OUTDIR_BASE/_tmp_s${SEED}.yaml" --device $DEVICE \
         2>&1 | tee "${OUTDIR_BASE}/${ENAME}.log"
     echo "  $ENAME finished: $(date)"

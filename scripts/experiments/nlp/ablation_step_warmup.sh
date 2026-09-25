@@ -32,6 +32,15 @@ OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
+# Config generation must fail loudly: it raises when the tokenized cache is
+# missing, and running on would leave the next chain stage waiting for
+# results.json files that are never written.
+cfg_gen_failed() {
+    echo "ERROR: config generation failed for $1. Is the 100M-token tokenized"
+    echo "       SlimPajama cache in ./data_cache/slimpajama? (scripts/experiments/smoke/nlp.sh builds it)"
+    exit 1
+}
+
 mkdir -p "$OUTDIR_BASE"
 echo "============================================================"
 echo " 3d — per-STEP pa warmup @ Phase P lock-in (100M)"
@@ -53,7 +62,8 @@ run_cell() {
         echo "  $ENAME — DONE, skipping"; return
     fi
     mkdir -p "$ODIR"
-    ODIR=$ODIR ENAME=$ENAME SEED=$SEED WUNIT=$WUNIT $PYTHON - <<'PYEOF'
+    rm -f "${ODIR}/_tmp.yaml"
+    if ! ODIR=$ODIR ENAME=$ENAME SEED=$SEED WUNIT=$WUNIT $PYTHON - <<'PYEOF'
 import os, yaml
 from data.slimpajama import (
     find_tokenize_cache, compute_category_fractions,
@@ -99,6 +109,10 @@ cfg = {
 with open(os.path.join(ODIR, '_tmp.yaml'), 'w') as f:
     yaml.dump(cfg, f)
 PYEOF
+    then
+        cfg_gen_failed "$ENAME"
+    fi
+    [ -f "${ODIR}/_tmp.yaml" ] || cfg_gen_failed "$ENAME"
     echo "  Running $ENAME ... ($(date))"
     $PYTHON run_nlp.py --wandb --config "${ODIR}/_tmp.yaml" --device $DEVICE 2>&1 | tee "${ODIR}/${ENAME}.log"
     echo "  $ENAME finished: $(date)"

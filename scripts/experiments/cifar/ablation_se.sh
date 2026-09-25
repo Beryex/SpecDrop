@@ -34,12 +34,25 @@ if [ -z "$BEST_WR" ]; then
     echo "Example: BEST_PA=0.9 BEST_WR=0 bash $0"
     exit 1
 fi
-BEST_PI=$(python -c "print(round(1.0 - float('$BEST_PA'), 2))")
-
 PYTHON=${PYTHON:-python}
+BEST_PI=$($PYTHON -c "print(round(1.0 - float('$BEST_PA'), 2))")
+if [ -z "$BEST_PI" ]; then
+    echo "ERROR: could not compute p_inactive from BEST_PA=$BEST_PA with PYTHON=$PYTHON."
+    exit 1
+fi
 OUTDIR_BASE="./outputs/rtx5090_ablation"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
+
+# Every cell writes the same per-seed tmp YAML: remove it before generating
+# and stop if generation fails, so a stale YAML from the previous cell is
+# never trained under this cell's name.
+cfg_gen_check() {  # <exit status> <yaml> <cell>
+    if [ "$1" -ne 0 ] || [ ! -f "$2" ]; then
+        echo "ERROR: config generation failed for $3 ($2 not written). Stopping."
+        exit 1
+    fi
+}
 
 mkdir -p "$OUTDIR_BASE"
 
@@ -67,6 +80,7 @@ for SEED in "${SEEDS[@]}"; do
     fi
     mkdir -p "$ODIR"
     echo "  Running $ENAME ... ($(date))"
+    rm -f "$OUTDIR_BASE/_tmp_s${SEED}.yaml"
     $PYTHON -c "
 import yaml
 cfg = {
@@ -106,6 +120,7 @@ cfg = {
 }
 yaml.dump(cfg, open('$OUTDIR_BASE/_tmp_s${SEED}.yaml', 'w'))
 "
+    cfg_gen_check $? "$OUTDIR_BASE/_tmp_s${SEED}.yaml" "$ENAME"
     $PYTHON run.py --wandb --config "$OUTDIR_BASE/_tmp_s${SEED}.yaml" --device $DEVICE \
         2>&1 | tee "${OUTDIR_BASE}/${ENAME}.log"
     echo "  $ENAME finished: $(date)"
@@ -127,6 +142,7 @@ for SE_RATIO in 0.25 0.5 1.0 2.0 4.0; do
         fi
         mkdir -p "$ODIR"
         echo "  Running $ENAME ... ($(date))"
+        rm -f "$OUTDIR_BASE/_tmp_s${SEED}.yaml"
         $PYTHON -c "
 import yaml
 cfg = {
@@ -167,6 +183,7 @@ cfg = {
 }
 yaml.dump(cfg, open('$OUTDIR_BASE/_tmp_s${SEED}.yaml', 'w'))
 "
+        cfg_gen_check $? "$OUTDIR_BASE/_tmp_s${SEED}.yaml" "$ENAME"
         $PYTHON run.py --wandb --config "$OUTDIR_BASE/_tmp_s${SEED}.yaml" --device $DEVICE \
             2>&1 | tee "${OUTDIR_BASE}/${ENAME}.log"
         echo "  $ENAME finished: $(date)"

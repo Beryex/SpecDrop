@@ -37,6 +37,18 @@ OUTDIR_BASE="./outputs/rtx5090_vit_mini_ablation"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
+# Barrier timeout (seconds) for `scripts.ablation_chain wait`. The default,
+# 72 h, is about twice one GPU's share of the longest sweep phase (ViT 5a:
+# 6 cells of ~6 h); a barrier whose cells never finish (a failed run) now
+# stops the chain with an error instead of waiting forever. Override with
+# CHAIN_MAX_WAIT=<seconds>.
+CHAIN_MAX_WAIT=${CHAIN_MAX_WAIT:-259200}
+chain_wait_failed() {
+    echo "ERROR: ablation-chain barrier timed out after ${CHAIN_MAX_WAIT}s: a cell of the"
+    echo "       previous phase never wrote its results.json (check that cell's log)."
+    exit 1
+}
+
 mkdir -p "$OUTDIR_BASE"
 
 # ── Barrier on 5a@SE=1.0, auto-detect best_pa ─────────────────────────────
@@ -45,7 +57,7 @@ if [ -z "$BEST_PA" ]; then
     echo "[5b] Waiting for 5a@SE=$ANCHOR_SE to complete (18 results.json files)..."
     $PYTHON -m scripts.ablation_chain wait --phase 5a --base "$OUTDIR_BASE" \
         --seeds 42,123,456 --pa-values 0.5,0.6,0.7,0.8,0.9,1.0 \
-        --anchor-se "$ANCHOR_SE" --phase-prefix 5 --poll 60
+        --anchor-se "$ANCHOR_SE" --phase-prefix 5 --poll 60 --max-wait "$CHAIN_MAX_WAIT" || chain_wait_failed
 
     # Exclude pa=0.5 (structural degenerate) from the mechanism argmax.
     BEST_PA=$($PYTHON -m scripts.ablation_chain best --phase 5a --base "$OUTDIR_BASE" \
