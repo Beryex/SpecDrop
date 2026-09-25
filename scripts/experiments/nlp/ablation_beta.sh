@@ -178,7 +178,7 @@ cfg = {
                    'frac_per_category': fracs, 'amplification_beta': BETA,
                    'warmup_schedule': 'cosine',
                    'warmup_unit': 'step'},
-    'training': {'epochs': 10, 'batch_size': 64, 'lr': 3e-4, 'optimizer': 'adamw',
+    'training': {'epochs': 10, 'batch_size': 32, 'lr': 3e-4, 'optimizer': 'adamw',
                   'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000,
                   'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'},
     'data': {'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama',

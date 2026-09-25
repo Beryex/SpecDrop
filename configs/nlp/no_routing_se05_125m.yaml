@@ -1,15 +1,15 @@
-# T2.3 matched-SE scalar — 125M × 500M SlimPajama tokens × 10 epochs × 1 seed.
+# T2.3 matched-SE scalar — 125M × 500M SlimPajama tokens × 10 epochs, 3 seeds (paper App. E.10).
 # Architecture-and-SE matched control for ours_125m: same K=7 multi-branch
 # Transformer, same FFN budget split (ffn_per_branch=410, SE_dim=205), but
 # routing replaced with NoDropout (uniform 1/K mask, mech-OFF). Direct
 # comparison anchor for "does the 30M-tied result hold at 4× scale?"
 #
-# Regime is **identical** to the 30M main-table `no_routing_se05` baseline
-# (500M unique × 10 epochs = 5B token-passes); the ONLY axis varied is
-# model size (30M → 125M).
+# Same regime as the 30M main-table `no_routing_se05` baseline (500M unique
+# × 10 epochs = 5B token-passes); model size (30M → 125M) and per-device
+# batch (32 → 16) differ.
 #
 # Algebraically equivalent to ours under SoftSpecDrop pa=pi (uniform fallback).
-# 30M reference: PPL 45.28 vs ours 45.38 (+0.10 PPL, z=+1.64σ).
+# 30M reference: PPL 45.28 vs ours 45.38 (+0.10 PPL).
 #
 # Single seed × 10 epochs × 500M tokens × bs=16 ≈ 25h on 1 GPU.
 experiment_name: no_routing_se05_125m

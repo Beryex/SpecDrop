@@ -42,7 +42,7 @@ echo " SlimPajama × Transformer LM — 1 EPOCH (8 methods × ${#SEEDS[@]} seeds
 echo " $(date)"
 echo "============================================================"
 
-# Identical to rtx5090_4 except `epochs: 1` (ONLY change).
+# Identical to the 10-epoch main table except `epochs: 1` and batch 64 (paper App. E.11).
 COMMON_TRAINING="'epochs': 1, 'batch_size': 64, 'max_tokens': 500_000_000, 'lr': 3e-4, 'optimizer': 'adamw', 'weight_decay': 0.1, 'lr_schedule': 'cosine', 'warmup_steps': 1000, 'max_grad_norm': 1.0, '_compile_mode': 'reduce-overhead'"
 COMMON_DATA="'dataset': 'slimpajama', 'data_dir': './data_cache/slimpajama', 'num_workers': 4, 'max_seq_len': 512"
 LM_SHARED="'vocab_size': 50257, 'hidden_dim': 384, 'num_layers': 6, 'num_heads': 6, 'max_seq_len': 512"

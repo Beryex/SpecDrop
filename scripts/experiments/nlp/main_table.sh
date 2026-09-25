@@ -56,7 +56,7 @@
 # Setting:
 #   Optimizer: AdamW lr=3e-4, wd=0.1, β=(0.9,0.95)
 #   Schedule:  Linear warmup (1000 steps) + cosine decay
-#   Tokens:    500M, Batch: 64, max_seq_len=512, Seeds: 42 / 123 / 456
+#   Tokens:    500M, Batch: 32, max_seq_len=512, Seeds: 42 / 123 / 456
 ###############################################################################
 
 # Fail loudly on any command error — previously a failing config-gen block

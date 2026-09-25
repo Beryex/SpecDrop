@@ -16,7 +16,7 @@ algorithm:
   type: none
 training:
   epochs: 10
-  batch_size: 64
+  batch_size: 32                  # the paper's NLP runs use 32 (App. B.2)
   max_tokens: 500000000
   lr: 0.0003
   optimizer: adamw
