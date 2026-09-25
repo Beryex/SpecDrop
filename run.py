@@ -135,9 +135,12 @@ def main():
             cfg['algorithm']['_num_categories'] = num_superclasses
         print(f"ImageNet-1K: {num_superclasses} superclasses")
     else:
+        # data.batch_size (set by --batch_size) wins; otherwise the
+        # training.batch_size that every CIFAR config sets (128 in all
+        # reported runs), as for ImageNet above.
         train_loader, test_loader = get_dataloaders(
             data_dir=dcfg.get('data_dir', './data_cache'),
-            batch_size=dcfg.get('batch_size', 128),
+            batch_size=dcfg.get('batch_size', cfg.get('training', {}).get('batch_size', 128)),
             num_workers=dcfg.get('num_workers', 4),
             device=device,
         )
