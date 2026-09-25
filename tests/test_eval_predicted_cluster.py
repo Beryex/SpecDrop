@@ -72,7 +72,7 @@ def test_imagenet_norm_to_clip_norm_inverse_identity():
     assert torch.allclose(got, expected, atol=1e-5)
 
 
-# ─── CLI smoke (catches argparse / import drift, fa6aa8b lesson) ─────────
+# ─── CLI smoke (catches argparse / import drift) ─────────
 def test_cli_help_exits_zero():
     p = subprocess.run(
         [sys.executable, '-m', 'scripts.eval_predicted_cluster', '--help'],

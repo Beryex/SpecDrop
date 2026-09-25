@@ -26,7 +26,7 @@ if [ $# -lt 1 ]; then
 fi
 
 PYTHON=${PYTHON:-python}
-GPUS=${GPUS:-"0"}
+GPUS=${GPUS:-${CUDA_VISIBLE_DEVICES:-0}}
 OUTDIR_BASE=${OUTDIR_BASE:-"./outputs/softmoe_study_finals"}
 DEVICE=${DEVICE:-cuda}
 if [ -n "${SEEDS_OVERRIDE:-}" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi

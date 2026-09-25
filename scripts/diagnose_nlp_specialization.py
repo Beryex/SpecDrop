@@ -178,7 +178,7 @@ def main():
     cluster_train = dcfg.get('cluster_label_path_train')
     cluster_val = dcfg.get('cluster_label_path_val')
     # data.max_train_tokens isn't always set in the YAML — historically
-    # `training.max_tokens` was used (silently dead code, fixed in 88c4e1a).
+    # `training.max_tokens` was used (silently dead code, since fixed).
     # The loader's default is 500M, matching paper-canonical regime; honor
     # any value present in cfg, else default. Both legacy paper-locked NLP
     # cells (no_routing_se05) and Phase P ours follow this default.

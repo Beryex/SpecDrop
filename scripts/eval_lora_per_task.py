@@ -14,7 +14,7 @@ its assigned categories" pattern, validated at fine task grain.
 Paper writer should plot 119-task scatter with sorted-Δ on x-axis.
 
 Re-uses trainer's `run_rouge_eval` machinery — already returns per_task dict
-post-`dbfaac6` (`_collate` preserves task_id). Cache is hit on re-run.
+(`_collate` preserves task_id). Cache is hit on re-run.
 
 Usage:
     python scripts/eval_lora_per_task.py \\

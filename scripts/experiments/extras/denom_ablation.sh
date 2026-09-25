@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-# Mask x denominator ablation (paper App. A.3, Tab. 6): four corners
+# Mask x denominator ablation (paper App. A.3, Tab. 7): four corners
 # {stochastic, random-dropout} x {fixed S, stochastic sum_k m_k} at the
 # ResNet-110 / CIFAR-100 scale, 3 seeds each. Output dirs match
 # scripts/summarize_e3_denom.py's expectations. Skips completed cells.

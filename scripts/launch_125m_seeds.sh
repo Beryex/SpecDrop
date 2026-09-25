@@ -18,7 +18,7 @@ i=0
 for cfgname in ours_125m no_routing_se05_125m; do
   for seed in 42 123 456; do
     ODIR="./outputs/nlp_${cfgname%_125m}_125m/s${seed}"
-    if [ -f "$ODIR/results.json" ]; then echo "skip $ODIR (done)"; i=$((i+1)); continue; fi
+    if [ -f "$ODIR/results.json" ]; then echo "skip $ODIR (done)"; continue; fi
     mkdir -p "$ODIR"
     $PY -c "
 import yaml
