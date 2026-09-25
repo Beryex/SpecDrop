@@ -15,8 +15,10 @@
 # Output dir: ./outputs/rtx5090_nlp_bs64/ — separate from paper-locked
 # `rtx5090_nlp_faithful/` so existing results remain untouched.
 #
-# Per-cell wall ~8h on RTX 5090 (10 epochs × 500M tokens × bs=64). 2 cells
-# run in parallel on GPU 0 + GPU 1 from _run_gpu0.sh / _run_gpu1.sh.
+# Per-cell wall ~8h on RTX 5090 (10 epochs × 500M tokens × bs=64). To run the
+# 2 cells in parallel, launch one process per GPU, e.g.
+#   CUDA_VISIBLE_DEVICES=0 METHODS_OVERRIDE=ours_phaseP bash scripts/experiments/extras/nlp_bs64.sh &
+#   CUDA_VISIBLE_DEVICES=1 METHODS_OVERRIDE=no_routing_se05 bash scripts/experiments/extras/nlp_bs64.sh &
 ###############################################################################
 
 set -eo pipefail

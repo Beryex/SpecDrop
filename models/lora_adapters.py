@@ -172,7 +172,8 @@ class LoRAMoEAdapter(nn.Module):
     trainer to aggregate — LoRAMoE's loss is CE + β · ℒ_lbc with β=0.1.
 
     Native paper setup attaches to FFN-only (not attention); this is enforced
-    at the MODEL level (lora_moe_model.py passes FFN targets only), not here.
+    at the MODEL level (LoRAMoEModel in models/lora_models.py defaults to the
+    FFN targets), not here.
     """
 
     def __init__(self, in_features, out_features, num_experts, rank,

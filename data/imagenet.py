@@ -224,7 +224,7 @@ def ensure_downloaded(data_dir='./data_cache/imagenet'):
     """Download ImageNet-1K if not already cached.
 
     Requires HuggingFace authentication (gated dataset).
-    Run `huggingface-cli login` first if not authenticated.
+    Run `hf auth login` (or set HF_TOKEN) first if not authenticated.
     Returns True if ready.
     """
     from datasets import load_dataset

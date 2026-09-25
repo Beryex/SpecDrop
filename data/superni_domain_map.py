@@ -9,9 +9,9 @@ bucket — same frequency-cutoff rule BREEDS (Santurkar 2021) uses on ImageNet.
 Normalization: split on ` -> ` and take the root segment, so
 "Social Media -> Twitter" and "Social Media" both map to "Social Media".
 
-Mapping artefacts (deterministic, versioned):
-  data_cache/lora/superni_domain_map_K20.json   (cluster_id lookup table)
-  data_cache/lora/superni_task_to_cluster.json  (task_id → cluster_id)
+Mapping artefact (deterministic, versioned), written by build_or_load_domain_map:
+  data_cache/lora/superni_domain_map_K20.json   (cluster-id lookup table and
+                                                  task_id → cluster_id under 'task_to_cluster')
 
 Usage:
     from data.superni_domain_map import (build_or_load_domain_map,

@@ -1,7 +1,7 @@
 """CIFAR per-superclass × per-branch zero-ablation pruning sensitivity.
 
 Mirrors `diagnose_{vit,nlp,lora}_specialization.py`'s `--run_dir/--out_json`
-interface so `rtx5090_15_alignment.sh` can dispatch all 4 settings uniformly.
+interface so `scripts/experiments/alignment/run.sh` can dispatch all 4 settings uniformly.
 
 Output JSON schema (kept compatible with `analyze_e2_heatmap.py` cache):
 {

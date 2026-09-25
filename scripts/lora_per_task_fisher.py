@@ -13,11 +13,11 @@ exist), supporting the granularity-alignment thesis at fine task grain.
 
 Inputs:
   outputs/eval_lora_per_task/{ours,hydra_lora_n8}_s42.json   (B1 output)
-  data_cache/lora/superni_task_to_cluster.json               (built by the LoRA data loader)
+  data_cache/lora/superni_domain_map_K20.json                (build_or_load_domain_map)
 
-If the cluster mapping file is missing, exits with a clear error + rsync
-command suggestion. The mapping is small (~10KB) and deterministic, built
-once by data.superni_domain_map.build_or_load_domain_map.
+If the cluster mapping file is missing, exits with a clear error. The
+mapping is small (~10KB) and deterministic, built once by
+data.superni_domain_map.build_or_load_domain_map.
 
 Output:
   outputs/analysis/lora_per_task_fisher.json
@@ -61,10 +61,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--ours', default='outputs/eval_lora_per_task/ours_s42.json')
     ap.add_argument('--hydra', default='outputs/eval_lora_per_task/hydra_lora_n8_s42.json')
-    ap.add_argument('--mapping', default='data_cache/lora/superni_task_to_cluster.json',
-                    help='task_id → cluster_id mapping JSON. Build via '
+    ap.add_argument('--mapping', default='data_cache/lora/superni_domain_map_K20.json',
+                    help='domain-map JSON with task_id → cluster_id under task_to_cluster '
+                         '(a flat {task_id: cluster_id} JSON also works). Written by '
                          'data.superni_domain_map.build_or_load_domain_map (auto-generated '
-                         'on first LoRA training run; cached under data_cache/lora/).')
+                         'on the first LoRA training run; cached under data_cache/lora/).')
     ap.add_argument('--tie_eps', type=float, default=0.0,
                     help='|Δ| ≤ tie_eps counts as a tie (default 0 = strict).')
     ap.add_argument('--out', default='outputs/analysis/lora_per_task_fisher.json')
@@ -72,14 +73,14 @@ def main():
 
     # 1. Load per-task ROUGE for the two methods
     ours = _load_or_die(args.ours,
-        'Run B1 first (rtx5090_11 F per-task) on the s42 ours checkpoint.')
+        'Run scripts/eval_lora_per_task.py first on the s42 ours checkpoint.')
     hydra = _load_or_die(args.hydra,
-        'Run B1 first on s42 hydra_lora_n8 checkpoint.')
+        'Run scripts/eval_lora_per_task.py first on the s42 hydra_lora_n8 checkpoint.')
 
     # 2. Load task → cluster_id mapping
     mapping_raw = _load_or_die(args.mapping,
-        'Build via data.superni_domain_map.build_or_load_domain_map on the 5090, '
-        '— run any LoRA chain once to generate it (small file, ~10KB).')
+        'Build it with data.superni_domain_map.build_or_load_domain_map '
+        '(any LoRA chain writes it on its first run; small file, ~10KB).')
     # Tolerate the two shapes: (a) flat {tid: cid} dict, (b) full domain_map
     # dict with task_to_cluster nested inside.
     if 'task_to_cluster' in mapping_raw:

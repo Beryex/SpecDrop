@@ -107,7 +107,7 @@ cfg = {
     'data': {
         'data_root': './data_cache/lora/natural-instructions',
         'num_workers': 4, 'num_clusters': 20,
-        'subset_frac_train': 0.2,   # 20% ablation subset per user directive
+        'subset_frac_train': 0.2,   # 20% SuperNI training subset for the sweep (App. E.8)
         'instances_per_task_train': 100, 'instances_per_task_eval': 100,
         'cluster_cache_dir': './data_cache/lora',
     },

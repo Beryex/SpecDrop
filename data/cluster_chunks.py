@@ -19,15 +19,15 @@ Re-run cost matrix (for 100M-token mini-ablation):
     first run                    → full rebuild, ~5-25 min
 
 Offline because clustering must be run ONCE per cache, produces deterministic
-label files that many training runs read. `_run_gpu0.sh` is the designated
-primary; `_run_gpu1/2.sh` poll for the cache-exists signal before training.
+label files that many training runs read. Build it once before launching the
+runs that read it (skip_if_exists makes a rebuild a no-op).
 
 Usage (as a module):
     python -m data.cluster_chunks \\
         --train-cache data_cache/slimpajama/tokenized_train_seq512_tok100000000_vocab<H>.pt \\
-        --train-output data_cache/slimpajama/clusters_bge-large_k7_tok100000000.pt \\
+        --train-output data_cache/slimpajama/clusters_train_seq512_tok100000000_bge-large_k7.pt \\
         --val-cache data_cache/slimpajama/tokenized_val_seq512_tok5000000_vocab<H>.pt \\
-        --val-output data_cache/slimpajama/clusters_bge-large_k7_val5M.pt \\
+        --val-output data_cache/slimpajama/clusters_val_seq512_tok5000000_bge-large_k7.pt \\
         --n_clusters 7 --embedder BAAI/bge-large-en-v1.5 --seed 42
 
 Usage (importable):

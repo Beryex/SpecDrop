@@ -5,12 +5,17 @@ Used by the E3 fixed-vs-stochastic-denominator ablation to isolate the
 mask-stochasticity factor (binary sampling) from the merge-denominator
 factor (constant S vs per-sample Σm_k). Two configs:
 
-    denom_mode='fixed'    : ÷ S = p_active + (K-1)*p_inactive  (Theorem 2)
+    denom_mode='fixed'    : ÷ S = p_active + (K-1)*p_inactive  (paper Prop. 1)
     denom_mode='adaptive' : ÷ Σ_k m_k                         (Jensen bias)
 
 At eval, the soft probability matrix is returned (no sampling) — exactly the
-expectation of the Bernoulli draws — so merged_eval = E[merged_train] for
-the fixed-denominator case (T2 in tests/test_fixed_denominator_invariant.py).
+expectation of the Bernoulli draws. With the fixed denominator this makes a
+single merge's eval output equal the expectation of its training output,
+E_m[Σ_k m_k h_k / S] = Σ_k p_k(c) h_k / S, when the branch outputs h_k do not
+depend on the mask (Prop. 1(a)); with stacked merges the later branch inputs
+depend on earlier masks, so the identity holds per merge, not end to end.
+The row-sum property it relies on, Σ_k p_k(c) = S, is T2 in
+tests/test_fixed_denominator_invariant.py.
 """
 
 import torch

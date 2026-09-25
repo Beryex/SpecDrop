@@ -32,7 +32,7 @@ from typing import Dict
 import torch
 
 # Methods + their config builders. Each returns a (model, name, label) tuple.
-# Matches the 7-method main table in rtx5090_6_imagenet_vit_faithful.sh.
+# Matches the 7-method main table in scripts/experiments/vit/main_table.sh.
 
 
 def _build(cfg_dict):

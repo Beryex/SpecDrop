@@ -337,8 +337,8 @@ class LoRATrainer:
                 # Per-epoch ROUGE-L generation eval (Wang 2022 Tk-Instruct
                 # canonical protocol). This is the SINGLE selection metric for
                 # best.pt + downstream hyperparam selection + baseline
-                # comparison — kept for run-to-run comparability
-                # 2026-04-25 for protocol rationale. Falls back to eval_loss
+                # comparison (the same protocol for every reported run).
+                # Falls back to eval_loss
                 # only when ROUGE eval is disabled (cfg.training.run_rouge_eval
                 # = False) or the eval call raises (smoke tests without real
                 # HF tokenizer / data).

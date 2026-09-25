@@ -335,7 +335,7 @@ def load_superni_cache(cache_path: str) -> Dict:
         raise FileNotFoundError(
             f"SuperNI cache not found: {cache_path}. "
             "Run build_superni_cache(...) to produce it "
-            "(see rtx5090_0d_smoke_lora.sh prep phase).")
+            "(scripts/experiments/smoke/lora.sh builds it in its prep phase).")
     return torch.load(cache_path, weights_only=False)
 
 
@@ -681,7 +681,7 @@ def get_superni_dataloaders(data_root: str, tokenizer,
     # variable prompt distribution made padding overhead (avg seq ~700 →
     # 1024) outweigh CUDA-graph savings. NLP's tokenized chunks ARE fixed
     # shape naturally, so reduce-overhead works there (see
-    # rtx5090_4_nlp_faithful.sh _compile_mode). SuperNI doesn't share that
+    # _compile_mode in scripts/experiments/nlp/main_table.sh). SuperNI doesn't share that
     # property → we use compile(mode='default') instead (inductor fusion
     # only, no CUDA graphs, handles dynamic shapes cleanly).
     def _coll(b): return _collate(b, pad_id)
