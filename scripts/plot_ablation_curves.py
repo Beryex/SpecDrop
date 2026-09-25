@@ -218,8 +218,8 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
     # 3 rows (pa / row-2 / SE) × 4 cols (CIFAR / ViT / NLP / LoRA).
     # Each column = one setting (own y-metric); each row = one sweep type
     # (own x-axis variable).
-    fig, axes = plt.subplots(3, 4, figsize=(10.0, 4.35),
-                             gridspec_kw={'wspace': 0.32, 'hspace': 0.55,
+    fig, axes = plt.subplots(3, 4, figsize=(10.0, 4.9),
+                             gridspec_kw={'wspace': 0.42, 'hspace': 0.72,
                                           'left': 0.055, 'right': 0.99,
                                           'top': 0.91, 'bottom': 0.10})
 
@@ -362,15 +362,14 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
         if row == 0:
             ax.set_title(panel['setting'], fontsize=16, pad=8,
                           fontweight='bold')
-        ax.tick_params(axis='both', which='major', labelsize=9)
+        ax.tick_params(axis='both', which='major', labelsize=12.5)
         for s in ax.spines.values():
             s.set_color('#666'); s.set_linewidth(0.7)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.grid(axis='y', linestyle=':', linewidth=0.5, color='#bbb', alpha=0.6)
-        if anchor is not None:
-            ax.legend(loc='best', fontsize=11.5, frameon=False, handlelength=1.5,
-                       borderaxespad=0.2)
+        # No per-panel legend: in every panel it covered data points; the
+        # dotted reference line is explained in the figure caption.
 
     out_pdf = f'{out_base}.pdf'
     out_png = f'{out_base}.png'
@@ -382,4 +381,8 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else 'outputs/analysis/fig_ablation_curves')
+    import argparse
+    ap = argparse.ArgumentParser(description='Fig. 4: hyperparameter ablation curves across the four settings.')
+    ap.add_argument('out_base', nargs='?', default='outputs/analysis/fig_ablation_curves',
+                    help='output path without extension (.pdf and .png are written)')
+    main(ap.parse_args().out_base)
