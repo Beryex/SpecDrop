@@ -81,11 +81,11 @@ def parse_cifar_json(path):
         `alignment_diag_argmax_hits` + `alignment_n_diag` directly.
     (b) legacy analyze_e1/e2 cache — only `pruning_sensitivity::kd_matrix`,
         recompute via argmax|kd_mk[c]| over branches (no missing cats).
-    kd_matrix is (K, M); transpose to (M, K) — paper convention."""
+    kd_matrix is (M, K) as written by evaluation.metrics (kd_matrix[c, k]),
+    i.e. already rows = categories, cols = branches — the paper convention."""
     d = json.load(open(path))
     ps = d.get('pruning_sensitivity', d)
-    kd_km = np.array(ps['kd_matrix'])  # (K, M)
-    kd_mk = kd_km.T                     # (M, K)
+    kd_mk = np.array(ps['kd_matrix'])  # (M, K): rows = categories
     if 'alignment_diag_argmax_hits' in d and 'alignment_n_diag' in d:
         hits = int(d['alignment_diag_argmax_hits'])
         n_diag = int(d['alignment_n_diag'])

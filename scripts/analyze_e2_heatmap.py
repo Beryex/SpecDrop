@@ -114,53 +114,94 @@ def save_heatmap_csv(method, seed, kd_matrix, out_dir):
     print(f'  saved {out_csv}')
 
 
+METHOD_TITLES = {'ours': 'Soft SpecDrop (ours)', 'no_routing': 'No-Routing'}
+
+
+def diag_stats(kd_matrix):
+    """Per-category diag-argmax hits (ties -> lowest branch index, as in the
+    Align column) and mean(|diag|) / mean(|off-diag|) on the raw |Delta|."""
+    a = np.abs(np.asarray(kd_matrix, dtype=np.float64))
+    M, K = a.shape
+    n = min(M, K)
+    hits = sum(int(a[c].argmax() == c) for c in range(n))
+    diag = np.mean([a[c, c] for c in range(n)])
+    off = (a.sum() - sum(a[c, c] for c in range(n))) / (a.size - n)
+    return hits, n, diag / max(off, 1e-12)
+
+
 def plot_grid(method_kds, out_pdf):
-    """Side-by-side heatmaps with a shared color scale (per-row normalized)."""
+    """Side-by-side heatmaps of |Delta_{k,c}|, each row normalized to its max.
+
+    Drawn at its printed size (full text width, 5.5 in) so font sizes are
+    true points: square cells, superclass names on the shared y-axis.
+    """
     import matplotlib
     matplotlib.use('Agg')
+    matplotlib.rcParams['pdf.fonttype'] = 42
     import matplotlib.pyplot as plt
 
     methods = list(method_kds.keys())
     n = len(methods)
-    fig, axes = plt.subplots(1, n, figsize=(4.2 * n + 1, 7), squeeze=False)
-    axes = axes[0]
+    M, K = next(iter(method_kds.values())).shape
 
-    # Normalize each method's KD per-category for visual contrast.
+    # Row-normalize |Delta| so each superclass shows which branch matters most
+    # for it (the per-category argmax that Align counts).
     normed = {}
     for m, kd in method_kds.items():
-        row_max = kd.max(axis=1, keepdims=True)
-        normed[m] = kd / np.maximum(row_max, 1e-12)
+        a = np.abs(kd)
+        normed[m] = a / np.maximum(a.max(axis=1, keepdims=True), 1e-12)
 
-    M, K = next(iter(method_kds.values())).shape
+    fig, axes = plt.subplots(1, n, figsize=(5.5, 3.2), squeeze=False,
+                             gridspec_kw={'wspace': 0.05, 'left': 0.285,
+                                          'right': 0.915, 'top': 0.87,
+                                          'bottom': 0.12})
+    axes = axes[0]
+    cat_names = [c.replace('_', ' ') for c in SUPERCLASS_NAMES[:M]]
     for ax, method in zip(axes, methods):
-        im = ax.imshow(normed[method], aspect='auto',
-                        cmap='YlOrRd', interpolation='nearest', vmin=0, vmax=1)
-        ax.set_title(method, fontsize=11)
-        ax.set_xlabel('Branch')
+        im = ax.imshow(normed[method], aspect='equal', cmap='OrRd',
+                       interpolation='nearest', vmin=0, vmax=1)
+        hits, n_diag, ratio = diag_stats(method_kds[method])
+        ax.set_title(METHOD_TITLES.get(method, method), fontsize=8, pad=11)
+        ax.text(0.5, 1.012, f'diag-argmax {hits}/{n_diag}, ratio {ratio:.2f}$\\times$',
+                transform=ax.transAxes, ha='center', va='bottom', fontsize=6.5,
+                color='#333333')
+        ax.set_xticks(range(0, K, 5))
+        ax.set_xticks(range(K), minor=True)
+        ax.tick_params(axis='x', labelsize=7, length=2, pad=1.5)
+        ax.tick_params(which='minor', length=1)
+        ax.set_xlabel('Branch $k$', fontsize=7.5, labelpad=1.5)
         if ax is axes[0]:
-            cat_names = SUPERCLASS_NAMES[:M]
             ax.set_yticks(range(M))
-            ax.set_yticklabels([n.replace('_', ' ') for n in cat_names], fontsize=7)
-            ax.set_ylabel('Superclass')
+            ax.set_yticklabels(cat_names, fontsize=6.0)
+            ax.tick_params(axis='y', length=2, pad=1.5)
         else:
-            ax.set_yticks([])
-        ax.set_xticks(range(0, K, max(1, K // 10)))
-        # Mark assignment-matrix diagonal (round-robin for ours).
+            ax.set_yticks(range(M))
+            ax.set_yticklabels([])
+            ax.tick_params(axis='y', length=2)
+        for s in ax.spines.values():
+            s.set_linewidth(0.5)
+            s.set_color('#666666')
+        # Outline each superclass's round-robin assigned branch (ours only).
         if method == 'ours':
             for c in range(M):
-                assigned = c % K
-                ax.add_patch(plt.Rectangle((assigned - 0.5, c - 0.5), 1, 1,
-                                            fill=False, edgecolor='blue',
-                                            linewidth=1.2))
+                ax.add_patch(plt.Rectangle((c % K - 0.5, c - 0.5), 1, 1,
+                                           fill=False, edgecolor='#1f4e9c',
+                                           linewidth=0.9))
 
-    fig.colorbar(im, ax=axes, orientation='vertical', fraction=0.02, pad=0.02,
-                 label='Per-row-normalized pruning sensitivity')
-    plt.suptitle('Pruning sensitivity KD(k, c) heatmap — only category-conditioned '
-                 'routing produces a clean diagonal',
-                 fontsize=12, y=1.02)
-    plt.savefig(out_pdf, dpi=150, bbox_inches='tight')
+    fig.canvas.draw()  # resolve equal-aspect axes positions before placing the colorbar
+    pos = axes[-1].get_position()
+    cax = fig.add_axes([pos.x1 + 0.012, pos.y0, 0.013, pos.height])
+    cb = fig.colorbar(im, cax=cax, ticks=[0, 0.5, 1])
+    cb.ax.tick_params(labelsize=6.5, length=2, pad=1.5)
+    cb.outline.set_linewidth(0.5)
+    cb.set_label('$|\\Delta_{k,c}|$ / row max', fontsize=7, labelpad=3)
+
+    plt.savefig(out_pdf, bbox_inches='tight', pad_inches=0.02)
     plt.close()
     print(f'  saved {out_pdf}')
+    for m in methods:
+        hits, n_diag, ratio = diag_stats(method_kds[m])
+        print(f'  {m}: diag-argmax {hits}/{n_diag}, diag/off {ratio:.4f}')
 
 
 def main():

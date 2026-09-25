@@ -129,17 +129,26 @@ def _write_json(p, d):
         json.dump(d, f)
 
 
-def test_parse_cifar_json_kd_matrix_transpose():
-    """CIFAR JSON has kd_matrix in (K, M) convention; parser must transpose."""
+def test_parse_cifar_json_kd_matrix_orientation():
+    """CIFAR JSON kd_matrix is (M, K) as written by evaluation.metrics
+    (kd_matrix[c, k]); the parser must NOT transpose it, and Align counts
+    categories whose most-sensitive branch is their assigned branch."""
     with tempfile.TemporaryDirectory() as td:
-        # K=3 branches, M=2 cats. cat 0 sensitive to branch 0, cat 1 to branch 1.
-        kd_KM = [[1.0, 0.1], [0.1, 1.0], [0.0, 0.0]]
+        # M=2 cats, K=3 branches. cat 0 sensitive to branch 0, cat 1 to branch 1.
+        kd_MK = [[1.0, 0.1, 0.0], [0.1, 1.0, 0.0]]
         p = os.path.join(td, 'fake.json')
-        _write_json(p, {'pruning_sensitivity': {'kd_matrix': kd_KM}})
+        _write_json(p, {'pruning_sensitivity': {'kd_matrix': kd_MK}})
         rec = parse_cifar_json(p)
-        assert rec['kd_matrix'].shape == (2, 3)  # (M, K) after transpose
+        assert rec['kd_matrix'].shape == (2, 3)  # (M, K), unchanged
         assert rec['alignment_hits'] == 2
         assert rec['alignment_n'] == 2
+
+        # Square but asymmetric: per-category argmax gives 2 hits (rows 0, 2),
+        # per-branch (transposed) would give 1 — pins the orientation.
+        kd_sq = [[1.0, 0.9, 0.0], [0.0, 0.5, 0.8], [0.0, 0.0, 0.3]]
+        p2 = os.path.join(td, 'fake_sq.json')
+        _write_json(p2, {'pruning_sensitivity': {'kd_matrix': kd_sq}})
+        assert parse_cifar_json(p2)['alignment_hits'] == 2
 
 
 def test_parse_vit_json_delta_matrix():

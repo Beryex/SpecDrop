@@ -51,9 +51,10 @@ def load_cifar(setting: str) -> np.ndarray:
     """setting ∈ {'ours', 'no_routing'}."""
     p = f'outputs/analysis/specialization/{setting}_s42.json'
     d = json.load(open(p))
-    # kd_matrix is K×D: rows = branches, cols = categories. Transpose so
-    # rows = categories, cols = branches (paper convention; diag-aligned).
-    kd = np.array(d['pruning_sensitivity']['kd_matrix']).T
+    # kd_matrix is M×K as written by evaluation.metrics._compute_pruning_sensitivity
+    # (kd_matrix[c, k]): rows = categories, cols = branches — already the paper
+    # convention, so no transpose.
+    kd = np.array(d['pruning_sensitivity']['kd_matrix'])
     return np.abs(kd)
 
 
@@ -88,8 +89,8 @@ def load_vit_ours() -> np.ndarray:
 
 
 def load_vit_no_routing() -> np.ndarray | None:
-    """Real ViT no-routing diagnostic if rsync'd back; else None → synthesize."""
-    p = 'outputs/analysis/vit_diag/mbvit_no_routing_s42.json'
+    """Architecture-matched ViT no-routing (+SE, as ours) diagnostic; else None → synthesize."""
+    p = 'outputs/analysis/vit_diag/mbvit_no_routing_se_s42.json'
     return _load_vit_diag(p) if os.path.exists(p) else None
 
 
@@ -112,7 +113,7 @@ def load_lora_ours() -> np.ndarray:
 
 
 def load_lora_no_routing() -> np.ndarray | None:
-    p = 'outputs/analysis/lora_diag/mb_lora_no_routing_s42.json'
+    p = 'outputs/analysis/lora_diag/mb_lora_no_routing_se1.0_s42.json'  # +SE, as ours
     return _load_lora_diag(p) if os.path.exists(p) else None
 
 
@@ -145,10 +146,10 @@ def synthesize_uniform(ours_mat: np.ndarray, seed: int = 42) -> np.ndarray:
 
 
 # ─── Plot ──────────────────────────────────────────────────────────────────
-COL_LABELS = ['CIFAR-100\n(K=20 superclasses)',
-              'ImageNet ViT\n(K=46 supercategories)',
-              'SlimPajama\n(K=7 domains)',
-              'LoRA SuperNI\n(K=20 task clusters)']
+COL_LABELS = ['CIFAR-100 — aligned\n(K=20 superclasses)',
+              'ImageNet ViT — aligned\n(K=46 supercategories)',
+              'SlimPajama — fuzzy\n(K=7 domains)',
+              'LoRA SuperNI — fuzzy\n(K=20 task clusters)']
 ROW_LABELS = ['Ours', 'No-routing\nbaseline']
 
 # Per-setting diagonal-argmax annotations on ours panels (paper Sec 5.3).
@@ -160,7 +161,7 @@ ROW_LABELS = ['Ours', 'No-routing\nbaseline']
 #   NLP    : 6/7    (6 covered domains; 1 has no test data,
 #                    nlp_diag/ours_phaseP_s42.json::diag_hits)
 #   LoRA   : 0/15   (anti-aligned, lora_diag/ours_s42.json::diag_hits)
-DIAG_HITS = [(13, 20), (46, 46), (6, 7), (0, 15)]
+DIAG_HITS = [(13, 20), (46, 46), (6, 6), (0, 15)]  # SlimPajama: 6 domains with val coverage
 
 
 def per_row_normalize(mat: np.ndarray) -> np.ndarray:

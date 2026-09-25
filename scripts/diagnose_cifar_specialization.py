@@ -53,16 +53,17 @@ def _load_results(run_dir):
 def _alignment_from_kd(kd_matrix):
     """diag-argmax-based alignment fraction.
 
-    kd_matrix shape: (K, M). For each category c in 0..min(M,K)-1,
-    check whether argmax over branches of |kd[:, c]| equals c. Return
-    (hits, n_diag) where n_diag = min(M, K).
+    kd_matrix shape: (M, K) as written by evaluation.metrics (kd_matrix[c, k]).
+    For each category c in 0..min(M,K)-1, check whether argmax over branches
+    of |kd[c, :]| equals c (ties -> lowest branch index). Return (hits, n_diag)
+    where n_diag = min(M, K).
     """
     if kd_matrix.size == 0:
         return 0, 0
     kd_abs = np.abs(np.asarray(kd_matrix, dtype=np.float64))
-    K, M = kd_abs.shape
+    M, K = kd_abs.shape
     n_diag = min(K, M)
-    hits = sum(int(kd_abs[:, c].argmax() == c) for c in range(n_diag))
+    hits = sum(int(kd_abs[c, :].argmax() == c) for c in range(n_diag))
     return hits, n_diag
 
 
