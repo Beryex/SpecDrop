@@ -28,6 +28,9 @@ training:
   lr_schedule: cosine
   warmup_steps: 1000
   max_grad_norm: 1.0
+  _compile_mode: reduce-overhead  # as in Tab. 3 (nlp/main_table.sh): under torch.compile the
+                                  # gradual-k schedule is not applied, so training uses k=1 and
+                                  # evaluation all 16 experts (see the README note on SMoE-Dropout)
 data:
   dataset: slimpajama
   data_dir: ./data_cache/slimpajama

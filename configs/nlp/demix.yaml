@@ -26,6 +26,7 @@ training:
   lr_schedule: cosine
   warmup_steps: 1000
   max_grad_norm: 1.0
+  _compile_mode: reduce-overhead  # as in the reported runs (scripts/experiments/nlp/main_table.sh)
   demix_eval_mode: oracle         # paper setting (App. B.2); 'mixture' = Gururangan et al. posterior-weighted inference
 data:
   dataset: slimpajama
