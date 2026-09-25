@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """Paper-introduction specialization figure: 4 settings × 2 methods.
 
-Layout: 2 rows × 4 cols (no titles per user spec).
+Layout: 2 rows × 4 cols (no per-panel titles beyond the column headers).
   Top row    : ours (per-category × per-branch ablation Δ)
-  Bottom row : multi-branch no-routing baseline (uniform 1/K mask)
+  Bottom row : architecture-matched No-Routing control (uniform 1/K mask; +SE wherever ours has one)
   Cols (L→R) : CIFAR-100 (K=20) | ImageNet ViT (K=46) | SlimPajama (K=7) | LoRA SuperNI (K=20)
 
 Real data sources (preferred):
   CIFAR ours / no-routing : outputs/analysis/specialization/{ours,no_routing}_s42.json
-  ViT ours / no-routing   : outputs/analysis/vit_diag/{ours_vit, mbvit_no_routing}_s42.json
+  ViT ours / no-routing   : outputs/analysis/vit_diag/{ours_vit, mbvit_no_routing_se}_s42.json
   NLP ours / no-routing   : outputs/analysis/nlp_diag/{ours_phaseP, no_routing_se05}_s42.json
                             (falls back to phaseP_pa0.6_wr1.0_s42 for ours)
-  LoRA ours / no-routing  : outputs/analysis/lora_diag/{ours, mb_lora_no_routing}_s42.json
+  LoRA ours / no-routing  : outputs/analysis/lora_diag/{ours, mb_lora_no_routing_se1.0}_s42.json
 
 If a no-routing baseline diagnostic file is missing, the script falls back
 to synthesizing a uniform-magnitude-matched noise baseline (faithful
 illustration of `algorithms.no_dropout.NoDropout` analytical behaviour).
-Generate the real baselines via `bash rtx5090_15_diag_for_intro_fig.sh`
-on the 5090 and rsync the 8 JSONs back.
+The real diagnostic JSONs are produced by scripts/experiments/alignment/run.sh.
 
 Sign / magnitude normalization (per-panel):
   Convert every Δ to "ablation importance" = |Δ|, max-normalize per column
@@ -150,17 +149,17 @@ COL_LABELS = ['CIFAR-100 — aligned\n(K=20 superclasses)',
               'ImageNet ViT — aligned\n(K=46 supercategories)',
               'SlimPajama — fuzzy\n(K=7 domains)',
               'LoRA SuperNI — fuzzy\n(K=20 task clusters)']
-ROW_LABELS = ['Ours', 'No-routing\nbaseline']
+ROW_LABELS = ['Ours', 'No-Routing\ncontrol']
 
 # Per-setting diagonal-argmax annotations on ours panels (paper Sec 5.3).
-# Format: (diag_hits, n_cats_or_branches). Embedded as small bottom-right
+# Format: (diag_hits, n_cats_or_branches). Embedded as a small top-right
 # text on each ours panel so readers don't need to cross-reference the
 # section text.
 #   CIFAR  : 13/20  (per pruning_sensitivity in specialization/ours_s42.json)
 #   ViT    : 46/46  (perfect alignment, vit_diag/ours_vit_s42.json::diag_hits)
-#   NLP    : 6/7    (6 covered domains; 1 has no test data,
+#   NLP    : 6/6    (6 domains with validation coverage; Book has none,
 #                    nlp_diag/ours_phaseP_s42.json::diag_hits)
-#   LoRA   : 0/15   (anti-aligned, lora_diag/ours_s42.json::diag_hits)
+#   LoRA   : 0/15   (lora_diag/ours_s42.json::diag_hits)
 DIAG_HITS = [(13, 20), (46, 46), (6, 6), (0, 15)]  # SlimPajama: 6 domains with val coverage
 
 
@@ -266,7 +265,7 @@ def plot_grid(out_base: str):
                                      alpha=0.85, linewidth=0.6))
             if c == 0:
                 ax.set_ylabel(ROW_LABELS[r], fontsize=15, fontweight='bold',
-                                rotation=0, labelpad=42, va='center')
+                                rotation=0, labelpad=52, va='center')
 
     # Save
     out_pdf = f'{out_base}.pdf'
