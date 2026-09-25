@@ -15,7 +15,7 @@ The current release supports:
 - Soft SpecDrop training and evaluation across four settings: CIFAR-100 (ResNet-110), ImageNet-1K under the BREEDS-46 partition (ViT-S/16), SlimPajama-6B language modeling (30M / 125M Transformer LM), and SuperNI instruction tuning (Llama-3.2-1B + LoRA).
 - Every baseline in the paper's main tables: dense references, architecture-matched No-Routing(+SE) controls, HardCategory, Stochastic Depth, Example-Tied Dropout, Contextual Dropout, Soft MoE (deployed / tuned second-half / compute-matched), Mod-Squad, the auxiliary-loss-free top-k router, COMET, Switch, Hash Layers, SMoE-Dropout, DEMix, single LoRA, LoRAMoE, MoCLE, and HydraLoRA.
 - The paper's evaluation controls and analysis tooling: the information-matched logit-masking control, label-quality sweeps, branch–category alignment via pruning sensitivity, and per-method MACs / wall-clock accounting.
-- One-command reproduction of every main-table result (Tables 1–4 and their Align columns) via `reproduce.sh`, with per-cell auto-skip on resume and 460 unit tests.
+- One-command reproduction of every main-table result (Tables 1–4 and their Align columns) via `reproduce.sh`, with per-cell auto-skip on resume and 471 unit tests.
 
 ## Contents
 - [SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization](#specdrop-parameter-free-category-conditioned-routing-for-modular-specialization)
@@ -114,7 +114,7 @@ All paper numbers were produced on NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB b
 │   ├── wall_clock_table.py     # per-method wall-clock table
 │   ├── compute_flops_tables.py # per-method MACs (fvcore)
 │   └── experiments/            # per-setting reproduction chains ({cifar,vit,nlp,lora,alignment,smoke})
-├── tests/                      # 460 unit tests (python -m pytest tests/ -q)
+├── tests/                      # 471 unit tests (python -m pytest tests/ -q)
 └── run.py / run_nlp.py / run_lora.py   # per-setting entries
 ```
 </details>
@@ -126,7 +126,7 @@ All paper numbers were produced on NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB b
 - **Determinism**: `torch.use_deterministic_algorithms(warn_only=True)` + `CUBLAS_WORKSPACE_CONFIG=:4096:8`. Cross-machine top-1 / PPL / ROUGE-L reproduces within seed noise on any RTX 5090; bit-identical reproduction is not claimed.
 - **Param budget**: `utils/sanity_check.py` runs before every training call and crashes if the trainable parameter count is more than 2% off the per-setting reference (CIFAR ResNet-110 1.737 M, ViT-S/16 22.051 M, NLP 30.143 M, Llama-1B + LoRA 225 M).
 - **Auto-skip on resume**: every reproduction script skips a cell whose `outputs/<run_dir>/results.json` exists (the LoRA chain additionally verifies the relevant metric is populated); re-running a chain after a partial completion only fills in the missing cells.
-- **Tests**: 460 unit tests; `python -m pytest tests/ -q` should be all-green before claiming reproduction.
+- **Tests**: 471 unit tests; `python -m pytest tests/ -q` should be all-green before claiming reproduction.
 - Run-level provenance (per-run `results.json` with per-epoch histories) is available on request.
 </details>
 

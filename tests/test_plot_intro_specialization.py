@@ -7,7 +7,23 @@ _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
+# Real-data tests read the seed-42 diag JSONs under outputs/analysis/, which the
+# public release does not ship (regenerate with scripts/diagnose_*_specialization.py).
+CIFAR_OURS = 'outputs/analysis/specialization/ours_s42.json'
+CIFAR_NR = 'outputs/analysis/specialization/no_routing_s42.json'
+VIT_OURS = 'outputs/analysis/vit_diag/ours_vit_s42.json'
+NLP_OURS = 'outputs/analysis/nlp_diag/ours_phaseP_s42.json'
+NLP_OURS_LEGACY = 'outputs/analysis/nlp_diag/phaseP_pa0.6_wr1.0_s42.json'
+LORA_OURS = 'outputs/analysis/lora_diag/ours_s42.json'
 
+
+def _needs(*paths):
+    """Skip unless every listed diag JSON exists locally."""
+    missing = [p for p in paths if not os.path.exists(p)]
+    return pytest.mark.skipif(bool(missing), reason=f'no local diag JSON: {", ".join(missing)}')
+
+
+@_needs(CIFAR_OURS)
 def test_load_cifar_shape_and_diag_ratio():
     from scripts.plot_intro_specialization import load_cifar
     ours = load_cifar('ours')
@@ -19,6 +35,7 @@ def test_load_cifar_shape_and_diag_ratio():
     assert diag > off, f'CIFAR ours: expected diag>off, got diag={diag:.2e} off={off:.2e}'
 
 
+@_needs(CIFAR_NR)
 def test_load_cifar_no_routing_no_specialization():
     from scripts.plot_intro_specialization import load_cifar
     nr = load_cifar('no_routing')
@@ -30,6 +47,7 @@ def test_load_cifar_no_routing_no_specialization():
     assert 0.6 < ratio < 1.6, f'CIFAR no_routing: ratio={ratio:.2f}, expected ~1.0'
 
 
+@_needs(VIT_OURS)
 def test_load_vit_shape_46x46():
     from scripts.plot_intro_specialization import load_vit_ours
     m = load_vit_ours()
@@ -40,6 +58,7 @@ def test_load_vit_shape_46x46():
     assert diag / max(off, 1e-12) > 10, f'ViT diag/off should be >10×, got {diag/off:.1f}'
 
 
+@_needs(NLP_OURS)
 def test_load_nlp_shape_and_signal():
     from scripts.plot_intro_specialization import load_nlp_ours
     m = load_nlp_ours()
@@ -49,6 +68,7 @@ def test_load_nlp_shape_and_signal():
     assert C == 7, f'expected 7 branches, got {C}'
 
 
+@_needs(LORA_OURS)
 def test_load_lora_rectangular_15x20():
     from scripts.plot_intro_specialization import load_lora_ours
     m = load_lora_ours()
@@ -89,6 +109,7 @@ def test_synthesize_uniform_magnitude_matched():
     assert abs(base.mean() - 5.0) < 3.0, f'expected ~5, got {base.mean():.2f}'
 
 
+@_needs(CIFAR_OURS, CIFAR_NR, VIT_OURS, NLP_OURS, LORA_OURS)
 def test_full_plot_runs(tmp_path):
     """Smoke: full plot pipeline runs end-to-end and produces files."""
     from scripts.plot_intro_specialization import plot_grid
@@ -213,6 +234,7 @@ def test_load_no_routing_returns_none_when_missing(tmp_path, monkeypatch):
     assert load_lora_no_routing() is None
 
 
+@_needs(NLP_OURS_LEGACY)
 def test_load_nlp_ours_legacy_fallback():
     """NLP ours loader tries new name first, falls back to legacy `phaseP_pa0.6_wr1.0_s42`."""
     from scripts.plot_intro_specialization import load_nlp_ours
