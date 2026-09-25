@@ -1,14 +1,17 @@
 # SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization
 
-Official PyTorch implementation for the "SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization" paper
+Official PyTorch implementation for the "SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization" paper, **NeurIPS 2026 (Poster)**.
 
 > *Granularity alignment, not algorithm choice, localizes when routing helps.*
 
 <p align="center">
-    📃 <a href="https://arxiv.org/abs/2608.04084" target="_blank">Paper</a> <br>
+    📃 <a href="https://arxiv.org/abs/2608.04084" target="_blank">Paper (arXiv)</a> <br>
 </p>
 
 ![overview](assets/specdrop_overview.png)
+
+## News
+- **[2026/09]** SpecDrop is accepted to NeurIPS 2026 (Poster).
 
 The current release supports:
 
@@ -19,6 +22,7 @@ The current release supports:
 
 ## Contents
 - [SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization](#specdrop-parameter-free-category-conditioned-routing-for-modular-specialization)
+	- [News](#news)
 	- [Contents](#contents)
 	- [Install](#install)
 	- [Usage](#usage)
@@ -76,7 +80,7 @@ CUDA_VISIBLE_DEVICES=2 SEEDS_OVERRIDE=456 bash scripts/experiments/cifar/main_ta
 wait
 ```
 
-All paper numbers were produced on NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16-capable GPU reproduces them within seed noise.
+All reported training runs used NVIDIA RTX 5090 (32 GB, bf16); any ≥24 GB bf16-capable GPU reproduces them within seed noise.
 
 | Setting | Single-GPU wall-clock (3 seeds) | Multi-GPU shortcut |
 |---|---|---|
@@ -149,7 +153,7 @@ Headline comparison against the architecture-matched No-Routing(+SE) controls an
 
 | Setting | Partition | Metric | Ours | Matched control | Dense | Align (ours) |
 |---|---|---|---|---|---|---|
-| CIFAR-100 (ResNet-110) | aligned | Top-1 ↑ | **79.23 ± 0.17** | 63.08 | 74.48 | 58.3% |
+| CIFAR-100 (ResNet-110) | aligned | Top-1 ↑ | **79.23 ± 0.17** | 63.08 | 74.48 | 68.3% |
 | ImageNet-1K BREEDS (ViT-S/16) | aligned | Top-1 ↑ | **79.89 ± 0.18** | 73.36 | 76.38 | 100.0% |
 | SlimPajama-6B (30M LM) | fuzzy (predicted null) | PPL ↓ | 45.38 ± 0.02 | 45.28 | 44.80 | 94.4% |
 | SuperNI (Llama-3.2-1B + LoRA) | fuzzy (predicted null) | ROUGE-L ↑ | 0.5106 ± 0.003 | 0.5094 | — | 2.2% |
@@ -159,11 +163,11 @@ On the aligned vision partitions SpecDrop exceeds the parameter-matched baseline
 ## Reference
 
 ```bibtex
-@article{wang2026specdrop,
-  title   = {{SpecDrop}: Parameter-Free Category-Conditioned Routing for Modular Specialization},
-  author  = {Wang, Boyao and Lei, Zhihan},
-  journal = {arXiv preprint arXiv:2608.04084},
-  year    = {2026}
+@inproceedings{wang2026specdrop,
+  title     = {{SpecDrop}: Parameter-Free Category-Conditioned Routing for Modular Specialization},
+  author    = {Wang, Boyao and Lei, Zhihan},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
 }
 ```
 

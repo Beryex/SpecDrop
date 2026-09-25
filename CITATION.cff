@@ -9,12 +9,15 @@ authors:
 repository-code: "https://github.com/Beryex/SpecDrop"
 license: MIT
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "SpecDrop: Parameter-Free Category-Conditioned Routing for Modular Specialization"
   authors:
     - family-names: Wang
       given-names: Boyao
     - family-names: Lei
       given-names: Zhihan
+  collection-title: "Advances in Neural Information Processing Systems"
+  conference:
+    name: "40th Conference on Neural Information Processing Systems (NeurIPS 2026)"
   year: 2026
-  journal: "arXiv preprint"
+  url: "https://arxiv.org/abs/2608.04084"
