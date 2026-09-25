@@ -17,12 +17,12 @@ model:
 algorithm:
   type: none
 training:
-  _compile_mode: reduce-overhead
+  _compile_mode: default          # as run (reduce-overhead CUDA graphs do not combine with grad accumulation)
   amp_dtype: bf16
-  batch_size: 256
+  batch_size: 128                 # as run: 128 x 2 accumulation = effective batch 256 (paper App. E.7)
   cutmix_alpha: 1.0
   epochs: 100
-  grad_accum_steps: 1
+  grad_accum_steps: 2
   label_smoothing: 0.1
   lr: 0.00025
   lr_schedule: cosine
@@ -36,7 +36,7 @@ data:
   augmentation: deit
   data_dir: ./data_cache/imagenet
   dataset: imagenet
-  num_workers: 16
+  num_workers: 8
   prefetch_factor: 4
   train_subset_frac: 0.2
   train_subset_seed: 42
