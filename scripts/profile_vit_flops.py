@@ -15,6 +15,11 @@ for FLOP (FMA convention) when quoting in paper.
 
 Outputs a markdown table to stdout AND a JSON dump for the paper writer
 to pick up — see `outputs/analysis/vit_flops.{md,json}`.
+
+Ours and No-Routing+SE are profiled at the deployed shared-expert ratio X=2
+(46x32 branch hidden + 64 SE hidden = dense FFN width), giving 4.25 GMACs as
+in paper Tab. 2 / App. F.3 (X=1 would give 4.19 G). The tuned and
+compute-matched Soft MoE rows and the ALF router are built from their YAMLs.
 """
 from __future__ import annotations
 
@@ -34,6 +39,13 @@ def _build(cfg_dict):
     """Build model from minimal config dict (bypasses run.py plumbing)."""
     from models import build_model
     return build_model({'model': cfg_dict, 'algorithm': {'type': 'none'}})
+
+
+def _from_yaml(path, name, label):
+    import yaml
+    with open(path) as f:
+        cfg = yaml.safe_load(f)
+    return lambda: (_build(cfg['model']), name, label)
 
 
 def _method_dense():
@@ -93,8 +105,13 @@ METHODS = [
     _method_soft_moe,
     _method_comet,
     _method_mb_no_routing,                  # SE=0
-    lambda: _method_mb_no_routing(se_ratio=1.0),   # matched-SE @ nominal SE=1.0
-    lambda: _method_ours(pa=0.6, beta=4.0, se_ratio=1.0),
+    lambda: _method_mb_no_routing(se_ratio=2.0),   # matched-SE @ deployed X=2
+    lambda: _method_ours(pa=0.6, beta=1.0, se_ratio=2.0),   # deployed operating point
+    _from_yaml('configs/vit/softmoe_study_r7.yaml', 'soft_moe_vit_tuned',
+               'Soft MoE (tuned, second-half placement)'),
+    _from_yaml('configs/vit/softmoe_study_r6.yaml', 'soft_moe_vit_compute_matched',
+               'Soft MoE (compute-matched)'),
+    _from_yaml('configs/vit/alf_moe_vit.yaml', 'alf_moe_vit', 'ALF top-k router'),
 ]
 
 
@@ -169,13 +186,13 @@ def main():
 
     # Markdown table for appendix.
     md_lines = [
-        '| Method | Params | Trainable | GFLOPs (@224) |',
-        '|---|---|---|---|',
+        '| Method | Params | Trainable | GMACs (@224) | GFLOPs (@224) |',
+        '|---|---|---|---|---|',
     ]
     for r in rows:
         md_lines.append(
             f"| {r['label']} | {r['params']/1e6:.2f}M "
-            f"| {r['trainable']/1e6:.2f}M | {r['gflops']:.2f} |")
+            f"| {r['trainable']/1e6:.2f}M | {r['macs']/1e9:.2f} | {r['gflops']:.2f} |")
     md_text = '\n'.join(md_lines)
     print(md_text)
 

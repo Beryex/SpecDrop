@@ -111,8 +111,10 @@ def trace_nlp():
 def lora_analytic():
     """Adapter MACs per token, closed form. All methods share the frozen
     Llama-3.2-1B base forward (~1.24B params ≈ 1.24 GMACs/token, weight-
-    dominated regime); adapters add K_active x r x (d_in + d_out) per
-    attached linear. Dims: hidden 2048, GQA kv 512, ffn 8192, 16 layers."""
+    dominated regime); adapters add K_computed x r x (d_in + d_out) per
+    attached linear, counting every adapter the forward computes (gate
+    linears excluded; paper App. F.3). Dims: hidden 2048, GQA kv 512,
+    ffn 8192, 16 layers."""
     D, KV, F_, L = 2048, 512, 8192, 16
     # (d_in, d_out) of the 7 attached linears per layer
     seven = [(D, D), (D, KV), (D, KV), (D, D),          # q k v o
@@ -120,14 +122,18 @@ def lora_analytic():
     ffn3 = [(D, F_), (D, F_), (F_, D)]
     base_macs = 1.236e9  # ~= base param count (weight-dominated per token)
 
-    def adapter(linears, r, k_active):
-        return L * k_active * r * sum(di + do for di, do in linears)
+    def adapter(linears, r, k_computed):
+        return L * k_computed * r * sum(di + do for di, do in linears)
+
+    def shared_a(linears, r, n_heads):
+        # HydraLoRA: one shared A (computed once), n_heads distinct B heads
+        return L * r * sum(di + n_heads * do for di, do in linears)
 
     rows = [
         ('Single LoRA r=320',        adapter(seven, 320, 1)),
-        ('MoCLE (E=4+1, r=63)',      adapter(seven, 63, 2)),          # top-1 + universal
+        ('MoCLE (E=4+1, r=63)',      adapter(seven, 63, 5)),          # 4 task experts computed, then top-1 mask; + universal
         ('LoRAMoE (K=6, r=76, FFN)', adapter(ffn3, 76, 6)),           # soft, all experts
-        ('HydraLoRA (N=8, r=67)',    adapter(seven, 67, 8)),          # shared A, 8 B-heads
+        ('HydraLoRA (N=8, r=67)',    shared_a(seven, 67, 8)),         # shared A, 8 B-heads
         ('No-Routing (K=20, r=16)',  adapter(seven, 16, 20)),
         ('Soft SpecDrop (ours, K=20 r=15 + SE15)', adapter(seven, 15, 21)),
     ]
