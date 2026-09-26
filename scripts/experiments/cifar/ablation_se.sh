@@ -2,7 +2,8 @@
 ###############################################################################
 # Ablation Phase C: shared expert dimension ratio sweep
 #
-# Sweep SE ratio: 0.25x, 0.5x, 1.0x, 2.0x, 4.0x of branch channels
+# Sweep SE ratio: nominal 0.25x, 0.5x, 1.0x, 2.0x, 4.0x of a routed branch, set by the
+# SE block count per layer group (3/7/18/35/75 vs 18 per routed branch; SE_BLOCKS below)
 # All param-matched to ResNet-110 (~1.74M)
 # Fixed: p_active=BEST_PA, warmup_ratio=BEST_WR (from Phase A & B)
 #

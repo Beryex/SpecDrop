@@ -11,10 +11,12 @@ Two recurring failure modes that previously produced silently-wrong results:
 
    Fix: `advance_softspecdrop_to_terminal()` advances BOTH current_epoch and
    current_step, then asserts `_warmup_progress() == 1.0` post-advance.
-   Refuses to proceed if the assertion fails. LoRA runs instead call
+   Refuses to proceed if the assertion fails. LoRA runs instead build
+   SoftSpecDrop with the training-time per-category fractions
+   (`superni_frac_per_category()`) and call
    `set_softspecdrop_to_checkpoint_state()` AFTER building the LoRATrainer
-   (whose __init__ resets the step count): it restores the warmup progress at
-   which the reported checkpoint was scored, plus the per-category fractions.
+   (whose __init__ re-sets the warmup step budget for the eval loader): it
+   restores the warmup progress at which the reported checkpoint was scored.
 
 2. **Silent cfg-key fallback.** `.get(key, default)` masks config corruption:
    if the trained model used `num_experts=10` but the cfg key got renamed,

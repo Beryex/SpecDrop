@@ -202,7 +202,7 @@ def plot_grid(out_base: str):
 
     cols = [(cifar_o, cifar_n), (vit_o, vit_n), (nlp_o, nlp_n), (lora_o, lora_n)]
 
-    # 2 rows × 4 cols. Ribbon-wide (3.25:1) for intro figure: the common
+    # 2 rows × 4 cols. Ribbon-wide (~3:1) for intro figure: the common
     # convention for multi-panel hero/teaser figures sits at 2.5:1–3.5:1.
     fig, axes = plt.subplots(2, 4, figsize=(10.5, 3.63),
                               gridspec_kw={'wspace': 0.20, 'hspace': 0.10,
@@ -245,8 +245,8 @@ def plot_grid(out_base: str):
     out_pdf = f'{out_base}.pdf'
     out_png = f'{out_base}.png'
     os.makedirs(os.path.dirname(out_base) or '.', exist_ok=True)
-    # dpi=600 embeds each heatmap at ~6 px per cell so cell edges are even
-    # (the default 100 dpi gave 3-5 px cells on the 46x46 ViT panel).
+    # dpi=600 (6x the default 100 dpi, which gave 3-5 px cells on the 46x46
+    # ViT panel) embeds ~18-27 px per ViT cell, so cell edges are even.
     fig.savefig(out_pdf, bbox_inches='tight', pad_inches=0.05, dpi=600)
     fig.savefig(out_png, bbox_inches='tight', pad_inches=0.05, dpi=200)
     plt.close(fig)

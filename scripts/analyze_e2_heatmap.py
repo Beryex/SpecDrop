@@ -5,7 +5,7 @@ For each method, run pruning sensitivity analysis on seed=42 (already cached
 by analyze_e1_mi_table.py if available) and produce:
 
   - outputs/analysis/heatmap_{method}_s42.csv  : 20×20 raw KD matrix
-  - outputs/analysis/fig_heatmap_comparison.pdf : 5-subplot side-by-side
+  - outputs/analysis/fig_heatmap_comparison.pdf : side-by-side heatmaps (ours, No-Routing)
 
 Reuses `evaluate_specialization` (which calls `_compute_pruning_sensitivity`).
 If a per-method JSON already exists in outputs/analysis/specialization/, the

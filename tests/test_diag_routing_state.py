@@ -22,7 +22,7 @@ def _algo(fr=None):
 
 
 def test_restores_best_epoch_state_after_trainer_reset(tmp_path):
-    """After LoRATrainer resets the step count, the helper restores the warmup
+    """After LoRATrainer re-sets the warmup step budget, the helper restores the warmup
     progress at which the best epoch was scored during training."""
     (tmp_path / 'results.json').write_text(json.dumps({'total_steps': 30, 'best_epoch': 2}))
     a = _algo()

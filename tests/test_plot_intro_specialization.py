@@ -15,6 +15,9 @@ VIT_OURS = 'outputs/analysis/vit_diag/ours_vit_s42.json'
 NLP_OURS = 'outputs/analysis/nlp_diag/ours_phaseP_s42.json'
 NLP_OURS_LEGACY = 'outputs/analysis/nlp_diag/phaseP_pa0.6_wr1.0_s42.json'
 LORA_OURS = 'outputs/analysis/lora_diag/ours_s42.json'
+VIT_NR = 'outputs/analysis/vit_diag/mbvit_no_routing_se_s42.json'
+NLP_NR = 'outputs/analysis/nlp_diag/no_routing_se05_s42.json'
+LORA_NR = 'outputs/analysis/lora_diag/mb_lora_no_routing_se1.0_s42.json'
 
 
 def _needs(*paths):
@@ -54,7 +57,7 @@ def test_load_vit_shape_46x46():
     assert m.shape == (46, 46)
     diag = m.diagonal().mean()
     off = (m.sum() - m.trace()) / (m.size - m.shape[0])
-    # ViT should have very strong diagonal (~26x ratio)
+    # ViT should have very strong diagonal (~24x ratio)
     assert diag / max(off, 1e-12) > 10, f'ViT diag/off should be >10×, got {diag/off:.1f}'
 
 
@@ -75,7 +78,7 @@ def test_load_lora_rectangular_15x20():
     assert m.shape == (15, 20)
 
 
-@_needs(CIFAR_OURS, CIFAR_NR, VIT_OURS, NLP_OURS, LORA_OURS)
+@_needs(CIFAR_OURS, CIFAR_NR, VIT_OURS, VIT_NR, NLP_OURS, NLP_NR, LORA_OURS, LORA_NR)
 def test_full_plot_runs(tmp_path):
     """Smoke: full plot pipeline runs end-to-end and produces files."""
     from scripts.plot_intro_specialization import plot_grid

@@ -6,7 +6,9 @@ outputs/analysis/vit_flops.md).
 CIFAR + NLP: fvcore MAC trace on models rebuilt from each run's stored config
 (input: one 32x32x3 image / one 512-token sequence). LoRA: closed-form adapter
 MACs on top of the shared frozen Llama-3.2-1B base (all methods share the
-identical base forward; only adapter add-on differs).
+identical base forward; only adapter add-on differs). fvcore has no handler
+for aten::baddbmm (the masked query-key product inside nn.MultiheadAttention),
+so the SlimPajama counts omit ~0.60 GMACs/sequence for every method (App. F.3).
 
 Usage: python scripts/compute_flops_tables.py
 Output: outputs/analysis/flops_all_settings.{md,json} (MACs; x2 = FLOPs).
