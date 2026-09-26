@@ -187,6 +187,34 @@ echo "$BEST_SE" > "$OUTDIR_BASE/_best_se.txt"
 echo "[8c] Persisted _best_se.txt = $BEST_SE"
 
 echo ""
+echo "============================================================"
+echo " 8c summary (pa=$BEST_PA, beta=$BEST_BETA) — ROUGE-L, mean and sample std over seeds"
+echo "============================================================"
+OUTDIR_BASE=$OUTDIR_BASE BEST_PA=$BEST_PA BEST_BETA=$BEST_BETA ANCHOR_SE=$ANCHOR_SE SE_SUFFIX=$SE_SUFFIX $PYTHON - <<'EOF'
+import json, os
+base = os.environ['OUTDIR_BASE']; pa = os.environ['BEST_PA']; beta = os.environ['BEST_BETA']
+anchor = os.environ['ANCHOR_SE']; suf = os.environ['SE_SUFFIX']
+print(f"{'SE':>4}  {'mean rouge_l':>14}  {'std':>6}  n")
+for se in ('0', '0.5', '1.0', '2.0'):
+    vals = []
+    for s in (42, 123, 456):
+        cands = [f'phase8c_pa{pa}_beta{beta}_se{se}_s{s}']
+        if se == anchor:  # run_se reuses the 8a/8b run for the anchor SE
+            cands.append(f'phase8a_pa{pa}{suf}_s{s}' if beta == '1.0'
+                         else f'phase8b_pa{pa}_beta{beta}{suf}_s{s}')
+        for d in cands:
+            p = os.path.join(base, d, 'results.json')
+            v = json.load(open(p)).get('eval_rouge_l') if os.path.exists(p) else None
+            if v is not None:
+                vals.append(v)
+                break
+    if vals:
+        m = sum(vals)/len(vals)
+        sd = (sum((x-m)**2 for x in vals)/(len(vals)-1))**0.5 if len(vals) > 1 else 0.0
+        print(f"{se:>4}  {m:>14.4f}  {sd:>6.4f}  {len(vals)}")
+EOF
+
+echo ""
 echo "Final LoRA ours config (from 8a → 8b → 8c):"
 echo "  pa=$BEST_PA  β=$BEST_BETA  SE=$BEST_SE  warmup_unit=step"
 echo "  Markers: $OUTDIR_BASE/_best_{pa,beta,se}.txt + _anchor_se.txt"

@@ -178,7 +178,7 @@ for beta in ('0', '1.0', '2.0', '4.0'):
                 vals.append(v)
     if vals:
         m = sum(vals)/len(vals)
-        sd = (sum((x-m)**2 for x in vals)/len(vals))**0.5 if len(vals) > 1 else 0.0
+        sd = (sum((x-m)**2 for x in vals)/(len(vals)-1))**0.5 if len(vals) > 1 else 0.0  # sample std, as App. E.8
         print(f"{beta:>4}  {m:>14.4f}  {sd:>6.4f}  {len(vals)}")
 EOF
 echo "Done: $(date)"
