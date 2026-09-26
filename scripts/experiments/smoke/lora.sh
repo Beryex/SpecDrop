@@ -6,7 +6,7 @@
 # to get the entire LoRA pipeline ready. It:
 #   (1) verifies HuggingFace login + gated-model access,
 #   (2) pre-downloads Llama-3.2-1B base + tokenizer (~2.5 GB, one-time),
-#   (3) shallow-clones allenai/natural-instructions (~400 MB, one-time),
+#   (3) shallow-clones allenai/natural-instructions (~0.8 GB, one-time),
 #   (4) builds the K=20 Wang 2022 Domains mapping,
 #   (5) pre-tokenizes + caches 3 splits to disk (train-full, train-20%, test)
 #       so ablation / main-table runs never re-tokenize,
@@ -115,7 +115,7 @@ n = sum(p.numel() for p in m.parameters())
 print(f"  {name} OK — {n/1e9:.2f} B params")
 PYEOF
 
-# ── (3) SuperNI clone (shallow, ~400 MB — retry; optional mirror) ───────────
+# ── (3) SuperNI clone (shallow, ~0.8 GB — retry; optional mirror) ───────────
 echo ""
 echo "[3/6] SuperNI dataset"
 if [ -d "$NI_DIR/tasks" ] && [ -f "$NI_DIR/splits/default/train_tasks.txt" ]; then
@@ -130,7 +130,7 @@ else
     mkdir -p "$(dirname "$NI_DIR")"
     # Boost git buffers so large sideband packets survive flaky GitHub
     # links (the "curl 18 transfer closed" error is the default 1-MB
-    # postBuffer giving up on a ~400 MB fetch).
+    # postBuffer giving up on a ~0.8 GB fetch).
     GITBUF=(-c http.postBuffer=1048576000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999)
 
     # Try the direct URL twice. A third-party mirror is tried only if you opt

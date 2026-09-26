@@ -1,12 +1,12 @@
 #!/bin/bash
 # Ensure the SuperNI task JSONs are present (shallow clone of
-# allenai/natural-instructions, ~400 MB one-time). The smoke script
+# allenai/natural-instructions, ~0.8 GB one-time). The smoke script
 # (scripts/experiments/smoke/lora.sh) has a hardened variant with retries
 # and an opt-in mirror (NI_MIRROR_URL); this is the minimal guard for the
 # training chains.
 NI_DIR=${NI_DIR:-./data_cache/lora/natural-instructions}
 if [ ! -d "$NI_DIR/tasks" ]; then
-    echo "[lora] SuperNI data not found — cloning allenai/natural-instructions (~400 MB) ..."
+    echo "[lora] SuperNI data not found — cloning allenai/natural-instructions (~0.8 GB) ..."
     mkdir -p "$(dirname "$NI_DIR")"
     git clone --depth 1 https://github.com/allenai/natural-instructions.git "$NI_DIR" \
         || { echo "[lora] clone failed — see scripts/experiments/smoke/lora.sh for the variant with retries"; exit 1; }
