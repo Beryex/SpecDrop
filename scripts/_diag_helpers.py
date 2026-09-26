@@ -98,3 +98,57 @@ def require_keys(d: dict, required: Iterable[str], context: str) -> None:
         raise KeyError(
             f'{context}: missing required keys {missing}. Refusing silent '
             f'defaults — they would produce wrong analysis without erroring.')
+
+
+def superni_frac_per_category(mapping: dict, K: int) -> list:
+    """Per-cluster training-task fractions, computed exactly as run_lora.py
+    does at start-up (the saved run configs do not contain them). SoftSpecDrop's
+    per-category (beta) targets depend on them, so an analysis script that
+    rebuilds the algorithm must pass them in to reproduce the trained routing."""
+    from collections import Counter
+    counter = Counter(mapping['task_to_cluster'][tid]
+                      for tid in mapping['train_tasks'])
+    fracs = [counter.get(c, 0) for c in range(K)]
+    total = sum(fracs)
+    return [f / total if total > 0 else 1.0 / K for f in fracs]
+
+
+def set_softspecdrop_to_checkpoint_state(algorithm, run_dir: str,
+                                         total_epochs: int) -> float:
+    """Put a SoftSpecDrop algorithm in the routing state at which the run's
+    reported checkpoint (best.pt) was scored during training, and return the
+    warmup progress.
+
+    LoRA runs score ROUGE-L at the end of every epoch with the routing weights
+    of that moment (step-unit p_a warmup spanning training when w_r = 1) and
+    report the best epoch, so the checkpoint's routing state is the warmup
+    progress at the end of `best_epoch`.
+
+    Call this AFTER constructing LoRATrainer: its __init__ calls
+    algorithm.set_total_steps() with the eval loader's step count, which
+    otherwise resets the warmup to its start (near-uniform branch weights).
+    """
+    import json
+    if algorithm is None or not hasattr(algorithm, '_warmup_progress'):
+        return 1.0
+    with open(f'{run_dir}/results.json') as f:
+        r = json.load(f)
+    total_steps = int(r['total_steps'])
+    best_epoch = int(r['best_epoch'])
+    steps_per_epoch = total_steps // int(total_epochs)
+    if hasattr(algorithm, 'current_epoch'):
+        algorithm.current_epoch = best_epoch
+    if getattr(algorithm, 'warmup_unit', 'epoch') == 'step':
+        algorithm.set_total_steps(total_steps)
+        algorithm.current_step = best_epoch * steps_per_epoch
+        denom = int(algorithm.warmup_ratio * total_steps)
+        expected = 1.0 if denom <= 0 else min(algorithm.current_step / denom, 1.0)
+    else:
+        denom = int(algorithm.warmup_ratio * int(total_epochs))
+        expected = 1.0 if denom <= 0 else min(best_epoch / denom, 1.0)
+    progress = algorithm._warmup_progress()
+    if abs(progress - expected) > 1e-9:
+        raise RuntimeError(
+            f'warmup progress {progress:.6f} != expected {expected:.6f} for '
+            f'best_epoch={best_epoch} of {total_epochs} ({run_dir})')
+    return progress

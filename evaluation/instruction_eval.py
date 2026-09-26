@@ -126,8 +126,9 @@ class SuperNIEvaluator:
                 # sliced to [:prompt_end], no padding inside). Silences the
                 # "pad token == eos token" inference warning.
                 prompt_attn = torch.ones_like(prompt_ids)
-                with torch.autocast(device_type='cuda', dtype=torch.bfloat16,
-                                    enabled=(self.device == 'cuda')):
+                with torch.autocast(device_type=('mps' if self.device == 'mps' else 'cuda'),
+                                    dtype=torch.bfloat16,
+                                    enabled=(self.device in ('cuda', 'mps'))):
                     gen = base.generate(
                         input_ids=prompt_ids,
                         attention_mask=prompt_attn,

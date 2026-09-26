@@ -72,7 +72,7 @@ def _seed_from_run_dir(run_dir: str) -> int:
     return int(m.group(1))
 
 
-def _build_algorithm_from_cfg(cfg, K, M):
+def _build_algorithm_from_cfg(cfg, K, M, frac_per_category=None):
     """Mirror run_lora.py::_build_algorithm. Returns None / NoDropout / SoftSpecDrop
     matching whatever this method was trained with.
 
@@ -81,8 +81,7 @@ def _build_algorithm_from_cfg(cfg, K, M):
       warmup_unit, amplification_beta. Silent defaults would silently produce
       wrong-mask reproduction.
     """
-    from scripts._diag_helpers import (advance_softspecdrop_to_terminal,
-                                         require_keys)
+    from scripts._diag_helpers import require_keys
     acfg = cfg.get('algorithm', {}) or {}
     atype = acfg.get('type', 'none')
     if atype == 'none':
@@ -106,12 +105,14 @@ def _build_algorithm_from_cfg(cfg, K, M):
             warmup_ratio=acfg['warmup_ratio'],
             total_epochs=cfg['training']['epochs'],
             assignment_seed=acfg.get('assignment_seed', 42),
-            frac_per_category=acfg.get('frac_per_category', None),
+            frac_per_category=(acfg.get('frac_per_category')
+                               or frac_per_category),
             amplification_beta=acfg['amplification_beta'],
             warmup_schedule=acfg['warmup_schedule'],
             warmup_unit=acfg['warmup_unit'],
         )
-        advance_softspecdrop_to_terminal(algo, cfg['training']['epochs'])
+        # The checkpoint's routing state is restored after LoRATrainer is
+        # built (its __init__ re-sets the warmup step budget).
         return algo
     raise ValueError(f'unknown algorithm.type={atype!r}')
 
@@ -152,8 +153,6 @@ def main():
     print(f'[per_task] loaded best.pt — missing={len(missing)}  unexpected={len(unexpected)}')
     model.eval()
 
-    algorithm = _build_algorithm_from_cfg(cfg, K, M)
-    print(f'[per_task] algorithm={type(algorithm).__name__ if algorithm else "None"}')
 
     # Build trainer in eval-only mode (passes eval_loader as both args).
     from training.trainer_lora import LoRATrainer
@@ -165,7 +164,7 @@ def main():
         tok.pad_token = tok.eos_token
 
     dcfg = cfg['data']
-    _, eval_loader, _ = get_superni_dataloaders(
+    _, eval_loader, mapping = get_superni_dataloaders(
         data_root=dcfg['data_root'], tokenizer=tok,
         batch_size=cfg['training'].get('batch_size_per_device', 8),
         max_seq_len=cfg['training'].get('max_seq_len', 1024),
@@ -177,6 +176,11 @@ def main():
         K=dcfg.get('num_clusters', 20),
         cache_dir=dcfg.get('cluster_cache_dir', './data_cache/lora'),
     )
+    from scripts._diag_helpers import (set_softspecdrop_to_checkpoint_state,
+                                         superni_frac_per_category)
+    algorithm = _build_algorithm_from_cfg(
+        cfg, K, M, frac_per_category=superni_frac_per_category(mapping, mapping['K']))
+    print(f'[per_task] algorithm={type(algorithm).__name__ if algorithm else "None"}')
     dummy_cfg = dict(cfg)
     # Override ipt for ROUGE eval so trainer.run_rouge_eval picks up our value.
     dummy_cfg.setdefault('output_dir', args.run_dir)
@@ -189,6 +193,9 @@ def main():
         cfg=dummy_cfg, model=model, algorithm=algorithm,
         train_loader=eval_loader, eval_loader=eval_loader,
         device=device, use_wandb=False)
+    routing_progress = set_softspecdrop_to_checkpoint_state(
+        algorithm, args.run_dir, cfg['training']['epochs'])
+    print(f'[per_task] routing state: warmup progress {routing_progress:.4f}')
 
     print(f'[per_task] running ROUGE eval ...')
     result = trainer.run_rouge_eval(
@@ -211,6 +218,7 @@ def main():
             'num_experts': K,
             'rank': cfg['model'].get('rank'),
             'shared_expert_rank': cfg['model'].get('shared_expert_rank', 0),
+            'routing_progress': routing_progress,
         },
     }
 

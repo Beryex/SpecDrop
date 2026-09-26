@@ -159,7 +159,7 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
     # version passed ipt=1 which built a separate tiny cache (~17s tokenize
     # waste on first invocation).
     dcfg = cfg['data']
-    tl, el, _ = _gsd(
+    tl, el, mapping = _gsd(
         data_root=dcfg['data_root'],
         tokenizer=tokenizer,
         batch_size=cfg['training']['batch_size_per_device'],
@@ -173,11 +173,13 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
         cache_dir=dcfg.get('cluster_cache_dir', './data_cache/lora'),
     )
     # Build the algorithm the same way run_lora.py does.
-    from scripts._diag_helpers import advance_softspecdrop_to_terminal, require_keys
+    from scripts._diag_helpers import (require_keys,
+                                         set_softspecdrop_to_checkpoint_state,
+                                         superni_frac_per_category)
     require_keys(cfg, ('data', 'model', 'training'),
-                  f'cfg in {run_dir}')
-    require_keys(cfg['data'], ('num_clusters',), f'cfg["data"] in {run_dir}')
-    require_keys(cfg['model'], ('num_experts',), f'cfg["model"] in {run_dir}')
+                  f'cfg in {cell_dir}')
+    require_keys(cfg['data'], ('num_clusters',), f'cfg["data"] in {cell_dir}')
+    require_keys(cfg['model'], ('num_experts',), f'cfg["model"] in {cell_dir}')
     K = cfg['data']['num_clusters']
     algorithm = None
     acfg = cfg.get('algorithm', {}) or {}
@@ -187,8 +189,8 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
         require_keys(acfg, ('p_active', 'p_inactive', 'assignment',
                              'warmup_ratio', 'warmup_schedule', 'warmup_unit',
                              'amplification_beta'),
-                      f'cfg["algorithm"] in {run_dir}')
-        require_keys(tcfg, ('epochs',), f'cfg["training"] in {run_dir}')
+                      f'cfg["algorithm"] in {cell_dir}')
+        require_keys(tcfg, ('epochs',), f'cfg["training"] in {cell_dir}')
         algorithm = SoftSpecDrop(
             num_modules=cfg['model']['num_experts'],
             num_categories=K,
@@ -198,12 +200,12 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
             warmup_ratio=acfg['warmup_ratio'],
             total_epochs=tcfg['epochs'],
             assignment_seed=acfg.get('assignment_seed', 42),
-            frac_per_category=acfg.get('frac_per_category', None),
+            frac_per_category=(acfg.get('frac_per_category')
+                               or superni_frac_per_category(mapping, mapping['K'])),
             amplification_beta=acfg['amplification_beta'],
             warmup_schedule=acfg['warmup_schedule'],
             warmup_unit=acfg['warmup_unit'],
         )
-        advance_softspecdrop_to_terminal(algorithm, tcfg['epochs'])
     elif acfg.get('type') == 'no_dropout':
         from algorithms.no_dropout import NoDropout
         algorithm = NoDropout(
@@ -213,6 +215,9 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
     trainer = LoRATrainer(
         cfg=dummy_cfg, model=model, algorithm=algorithm,
         train_loader=tl, eval_loader=el, device=device, use_wandb=False)
+    # Restore the routing state at which best.pt was scored during training
+    # (must follow LoRATrainer.__init__, which re-sets the warmup step budget).
+    set_softspecdrop_to_checkpoint_state(algorithm, cell_dir, cfg['training']['epochs'])
     rouge = trainer.run_rouge_eval(
         instances_per_task=instances_per_task,
         max_new_tokens=max_new_tokens)

@@ -160,12 +160,35 @@ def main():
     model.load_state_dict(lora_state, strict=False)
     model.eval()
 
-    # Build algorithm. For ours (`soft_specdrop`) reproduce the trained mask
-    # state at terminal warmup. For `no_dropout` baseline (mb_lora_no_routing
+    # Data first: the SuperNI task→cluster mapping gives SoftSpecDrop's
+    # per-category fractions (run_lora.py computes them at start-up; the saved
+    # run config does not contain them).
+    from data.natural_instructions import get_superni_dataloaders
+    from transformers import AutoTokenizer
+    tok = AutoTokenizer.from_pretrained(cfg['model']['base_model_name'])
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
+    dcfg = cfg['data']
+    _, eval_loader, mapping = get_superni_dataloaders(
+        data_root=dcfg['data_root'], tokenizer=tok,
+        batch_size=cfg['training'].get('batch_size_per_device', 8),
+        max_seq_len=cfg['training'].get('max_seq_len', 1024),
+        instances_per_task_train=dcfg.get('instances_per_task_train', 100),
+        instances_per_task_eval=dcfg.get('instances_per_task_eval', 100),
+        subset_frac_train=dcfg.get('subset_frac_train', 1.0),
+        num_workers=0,
+        data_subset_seed=dcfg.get('data_subset_seed', 42),
+        K=dcfg.get('num_clusters', 20),
+        cache_dir=dcfg.get('cluster_cache_dir', './data_cache/lora'),
+    )
+
+    # Build algorithm. For ours (`soft_specdrop`) reproduce the routing state
+    # of the reported checkpoint (set after the trainer is built). For `no_dropout` baseline (mb_lora_no_routing
     # checkpoints), skip warmup advance entirely — uniform 1/K mask has no
     # warmup state to advance; build NoDropout directly.
-    from scripts._diag_helpers import (advance_softspecdrop_to_terminal,
-                                         require_keys)
+    from scripts._diag_helpers import (require_keys,
+                                         set_softspecdrop_to_checkpoint_state,
+                                         superni_frac_per_category)
     require_keys(cfg, ('algorithm', 'training'), f'cfg in {args.run_dir}')
     acfg = cfg['algorithm']
     algo_type = acfg.get('type', 'soft_specdrop')
@@ -191,12 +214,13 @@ def main():
             warmup_ratio=acfg['warmup_ratio'],
             total_epochs=cfg['training']['epochs'],
             assignment_seed=acfg.get('assignment_seed', 42),
-            frac_per_category=acfg.get('frac_per_category', None),
+            frac_per_category=(acfg.get('frac_per_category')
+                               or superni_frac_per_category(mapping, mapping['K'])),
             amplification_beta=acfg['amplification_beta'],
             warmup_schedule=acfg['warmup_schedule'],
             warmup_unit=acfg['warmup_unit'],
         )
-        advance_softspecdrop_to_terminal(algorithm, cfg['training']['epochs'])
+        # Routing state is set after the trainer is built (see below).
     elif algo_type in ('none', None):
         # Learned-router methods (HydraLoRA / LoRAMoE / MoCLE). Routing is
         # baked into the model's forward; no external algorithm. eval_per_cluster
@@ -210,29 +234,23 @@ def main():
 
     # Build trainer (eval-only)
     from training.trainer_lora import LoRATrainer
-    from data.natural_instructions import get_superni_dataloaders
-    from transformers import AutoTokenizer
-    tok = AutoTokenizer.from_pretrained(cfg['model']['base_model_name'])
-    if tok.pad_token is None:
-        tok.pad_token = tok.eos_token
-    dcfg = cfg['data']
-    _, eval_loader, _ = get_superni_dataloaders(
-        data_root=dcfg['data_root'], tokenizer=tok,
-        batch_size=cfg['training'].get('batch_size_per_device', 8),
-        max_seq_len=cfg['training'].get('max_seq_len', 1024),
-        instances_per_task_train=dcfg.get('instances_per_task_train', 100),
-        instances_per_task_eval=dcfg.get('instances_per_task_eval', 100),
-        subset_frac_train=dcfg.get('subset_frac_train', 1.0),
-        num_workers=0,
-        data_subset_seed=dcfg.get('data_subset_seed', 42),
-        K=dcfg.get('num_clusters', 20),
-        cache_dir=dcfg.get('cluster_cache_dir', './data_cache/lora'),
-    )
     dummy_cfg = dict(cfg); dummy_cfg.setdefault('output_dir', args.run_dir)
     trainer = LoRATrainer(
         cfg=dummy_cfg, model=model, algorithm=algorithm,
         train_loader=eval_loader, eval_loader=eval_loader,
         device=device, use_wandb=False)
+
+    # LoRATrainer.__init__ re-sets the step budget of the warmup for the eval
+    # loader; only now can the checkpoint's routing state be restored.
+    routing_progress = None
+    if algo_type == 'soft_specdrop':
+        routing_progress = set_softspecdrop_to_checkpoint_state(
+            algorithm, args.run_dir, cfg['training']['epochs'])
+        row = algorithm.get_mask(torch.tensor([0], device=device), training=False)[0]
+        print(f'[Diag-LoRA] routing state: warmup progress {routing_progress:.4f}; '
+              f'cluster-0 weights assigned {row[0].item():.4f}, '
+              f'others {row[1:].mean().item():.4f} (S={algorithm.expected_mask_sum:.3f})',
+              flush=True)
 
     # Resolve branch subset (default = all branches 0..K-1).
     if args.branch_subset is not None:
@@ -304,6 +322,7 @@ def main():
         'amplification_beta': acfg.get('amplification_beta'),
         'shared_expert_rank': cfg['model'].get('shared_expert_rank', 0),
         'num_experts': K,
+        'routing_progress': routing_progress,
     }
     if is_shard:
         # Partial — only the bits this shard computed; merger fills the rest.
