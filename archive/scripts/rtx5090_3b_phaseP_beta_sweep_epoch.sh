@@ -14,11 +14,13 @@
 # phase3a_pa${best_pa}_s{seed}) = 6 new runs at most. If Phase V already
 # produced some of these cells, they're auto-skipped via results.json.
 #
-# Output: outputs/rtx5090_nlp_mini_ablation/phase3b_pa{pa}_beta{β}_s{seed}/
+# Output: outputs/rtx5090_nlp_mini_ablation_epoch/phase3b_pa{pa}_beta{β}_s{seed}/
+# Epoch-warmup variant: its own output base, so it neither collides with nor reuses the
+# step-warmup cells of scripts/experiments/nlp/ablation_*.sh (App. E.6 compares the two).
 ###############################################################################
 
 PYTHON=${PYTHON:-python}
-OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation"
+OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation_epoch"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
@@ -26,7 +28,7 @@ if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 45
 if [ -z "$BEST_PA" ]; then
     BEST_PA=$($PYTHON - <<'EOF'
 import json, os
-base = 'outputs/rtx5090_nlp_mini_ablation'
+base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 rows = {}
 for pa in ('0.5', '0.6', '0.7', '0.8', '0.9', '1.0'):
     ppls = []
@@ -146,7 +148,7 @@ echo " 3b summary (β sweep @ pa=$BEST_PA)"
 echo "============================================================"
 BEST_PA=$BEST_PA $PYTHON - <<'EOF'
 import json, os
-base = 'outputs/rtx5090_nlp_mini_ablation'
+base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 best_pa = os.environ['BEST_PA']
 rows = {}
 for beta in ('1.0', '2.0', '4.0'):

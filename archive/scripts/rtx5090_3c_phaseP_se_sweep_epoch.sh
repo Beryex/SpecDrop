@@ -15,11 +15,13 @@
 # New runs (if best_β=1, default): SE ∈ {0, 0.5, 2.0} × 3 seeds = 9 runs.
 # If best_β ≠ 1: same 3 SE values × 3 seeds = 9 runs (SE=1.0 from 3b, not 3a).
 #
-# Output: outputs/rtx5090_nlp_mini_ablation/phase3c_pa{pa}_beta{β}_se{se}_s{seed}/
+# Output: outputs/rtx5090_nlp_mini_ablation_epoch/phase3c_pa{pa}_beta{β}_se{se}_s{seed}/
+# Epoch-warmup variant: its own output base, so it neither collides with nor reuses the
+# step-warmup cells of scripts/experiments/nlp/ablation_*.sh (App. E.6 compares the two).
 ###############################################################################
 
 PYTHON=${PYTHON:-python}
-OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation"
+OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation_epoch"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
@@ -27,7 +29,7 @@ if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 45
 if [ -z "$BEST_PA" ]; then
     BEST_PA=$($PYTHON - <<'EOF'
 import json, os
-base = 'outputs/rtx5090_nlp_mini_ablation'
+base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 rows = {}
 for pa in ('0.5', '0.6', '0.7', '0.8', '0.9', '1.0'):
     ppls = []
@@ -49,7 +51,7 @@ fi
 if [ -z "$BEST_BETA" ]; then
     BEST_BETA=$(BEST_PA=$BEST_PA $PYTHON - <<'EOF'
 import json, os
-base = 'outputs/rtx5090_nlp_mini_ablation'
+base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 pa = os.environ['BEST_PA']
 if pa == '0.5':
     print('1.0'); exit()
@@ -174,7 +176,7 @@ echo " 3c summary (SE sweep @ pa=$BEST_PA β=$BEST_BETA)"
 echo "============================================================"
 BEST_PA=$BEST_PA BEST_BETA=$BEST_BETA $PYTHON - <<'EOF'
 import json, os
-base = 'outputs/rtx5090_nlp_mini_ablation'
+base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 pa = os.environ['BEST_PA']; beta = os.environ['BEST_BETA']
 rows = {}
 for se in ('0', '0.5', '1.0', '2.0'):
