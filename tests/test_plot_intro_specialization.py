@@ -219,7 +219,7 @@ def test_diag_hits_annotations_match_paper():
     """DIAG_HITS list values match paper Sec 5.3 specialization claims."""
     from scripts.plot_intro_specialization import DIAG_HITS
     # SlimPajama counts the 6 domains with validation coverage (Book has none).
-    assert DIAG_HITS == [(13, 20), (46, 46), (6, 6), (0, 15)]
+    assert DIAG_HITS == [(13, 20), (46, 46), (6, 6), (2, 15)]
 
 
 def test_load_no_routing_returns_none_when_missing(tmp_path, monkeypatch):

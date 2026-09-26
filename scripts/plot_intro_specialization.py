@@ -159,8 +159,8 @@ ROW_LABELS = ['Ours', 'No-Routing\ncontrol']
 #   ViT    : 46/46  (perfect alignment, vit_diag/ours_vit_s42.json::diag_hits)
 #   NLP    : 6/6    (6 domains with validation coverage; Book has none,
 #                    nlp_diag/ours_phaseP_s42.json::diag_hits)
-#   LoRA   : 0/15   (lora_diag/ours_s42.json::diag_hits)
-DIAG_HITS = [(13, 20), (46, 46), (6, 6), (0, 15)]  # SlimPajama: 6 domains with val coverage
+#   LoRA   : 2/15   (lora_diag/ours_s42.json::diag_hits)
+DIAG_HITS = [(13, 20), (46, 46), (6, 6), (2, 15)]  # SlimPajama: 6 domains with val coverage
 
 
 def per_row_normalize(mat: np.ndarray) -> np.ndarray:
