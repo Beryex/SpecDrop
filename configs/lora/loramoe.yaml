@@ -1,4 +1,4 @@
-# LoRAMoE (Dou 2023 ACL) — FFN-only, K=6 experts native, softmax gate + β·ℒ_lbc
+# LoRAMoE (Dou 2023 ACL) — FFN-only, K=6 experts native, softmax gate + β·balance loss (conventional CV², App. E.8)
 # balance loss. Rank adjusted so total LoRA params ≈ 225M (matches our K=20
 # r=16 MB-LoRA trainable param budget on GQA-aware Llama-3.2-1B).
 #

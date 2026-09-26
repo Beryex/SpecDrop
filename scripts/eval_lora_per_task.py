@@ -3,15 +3,11 @@
 
 For each of the 119 SuperNI held-out tasks, run greedy decoding under each
 method's NATIVE routing (no algorithm swap), score per-task ROUGE-L + EM,
-save full per-task dict so we can sort by `Δ = ours − HydraLoRA` and
-generate a fine-grained validation of the granularity-alignment thesis:
-  - Right tail (ours wins): cluster-aligned tasks (per-domain specialization)
-  - Left tail (HydraLoRA wins): cross-cluster reasoning tasks
-
-This is the LoRA analogue of paper's "Soft MoE wins broadly, ours wins on
-its assigned categories" pattern, validated at fine task grain.
-
-Paper writer should plot 119-task scatter with sorted-Δ on x-axis.
+save full per-task dict so the per-task split `Δ = ours − HydraLoRA` can be
+tested against the task clusters (App. E.13; scripts/lora_per_task_fisher.py
+runs the χ²/Fisher tests of App. E.14, which find no significant association).
+Soft SpecDrop is evaluated at the routing state with which the run's reported
+checkpoint was scored (_diag_helpers.set_softspecdrop_to_checkpoint_state).
 
 Re-uses trainer's `run_rouge_eval` machinery — already returns per_task dict
 (`_collate` preserves task_id). Cache is hit on re-run.
@@ -122,8 +118,9 @@ def main():
     ap.add_argument('--run_dir', required=True,
                     help='e.g. outputs/rtx5090_lora_faithful/ours_s42')
     ap.add_argument('--method', required=True,
-                    help='label (e.g. ours / hydra_lora / mb_lora_no_routing). '
-                         'Used in output filename + payload.')
+                    help='label, used in the output filename <method>_s<seed>.json; '
+                         'the paper uses ours / hydra_lora_n8 / mb_lora_no_routing '
+                         '(lora_per_task_fisher.py reads ours and hydra_lora_n8)')
     ap.add_argument('--device', default=None)
     ap.add_argument('--instances_per_task', type=int, default=10,
                     help='ipt for ROUGE eval (default 10 = matches training).')

@@ -265,7 +265,7 @@ class LoRAMoEModel(BaseLoRAModel):
         out = super().forward(input_ids=input_ids,
                                attention_mask=attention_mask,
                                labels=labels, cluster_id=cluster_id, **kwargs)
-        # LoRAMoE adds β · ℒ_lbc to the main CE loss.
+        # LoRAMoE adds β · (summed balance loss) to the main CE loss.
         if out.loss is not None:
             out.loss = out.loss + self.balance_weight * out.aux_loss
         return out

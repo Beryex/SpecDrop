@@ -9,11 +9,13 @@ can check "does ours win by compute, not by routing?" directly.
 Usage:
     python -m scripts.profile_vit_flops --batch 1 --img-size 224
 
-Depends on fvcore (standard FAIR op-FLOP counter, used by ViT, DINO,
-DeiT, Soft MoE releases). Reports per-method MAC count; multiply by 2
-for FLOP (FMA convention) when quoting in paper.
+Depends on fvcore (FAIR's operator-level counter). fvcore has no rule for
+aten::scaled_dot_product_attention, so the attention score and value
+products (0.36 GMACs per 224px image, identical for every ViT variant) are
+not counted; App. F.3 of the paper states this. Reports per-method MAC
+count; multiply by 2 for FLOPs.
 
-Outputs a markdown table to stdout AND a JSON dump for the paper writer
+Outputs a markdown table to stdout AND a JSON dump for the paper tables
 to pick up — see `outputs/analysis/vit_flops.{md,json}`.
 
 Ours and No-Routing+SE are profiled at the deployed shared-expert ratio X=2

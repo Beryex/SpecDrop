@@ -162,14 +162,16 @@ class HydraLoRAAdapter(nn.Module):
 # ══════════════════════════════════════════════════════════════════════════
 
 class LoRAMoEAdapter(nn.Module):
-    """K independent LoRA experts with a softmax gate and localized balancing
-    constraint (Dou 2023 Eq. 5 + Eq. 8).
+    """K independent LoRA experts with a softmax gate and a load-balance loss.
 
         y_delta = (α/r) · Σ_i ω_i · B_i A_i x,   ω = softmax(x W_g^T / τ)
 
-    Balance loss = σ²(Z) / μ(Z) where Z_{n,m} is the gate-weight expectation
-    matrix. We expose the balance loss via `self.last_aux_loss` for the
-    trainer to aggregate — LoRAMoE's loss is CE + β · ℒ_lbc with β=0.1.
+    Balance loss = Var(ω̄) / mean(ω̄)², the squared coefficient of variation of
+    the K experts' gate weights averaged over the batch's tokens. This is the
+    conventional balance loss, not Dou et al.'s localized balancing constraint
+    (their Eqs. 6-8 weight experts by world-knowledge vs downstream task type);
+    the paper states the substitution (App. E.8). The loss is exposed via
+    `self.last_aux_loss`; LoRAMoEModel adds β · Σ_sites loss with β=0.1.
 
     Native paper setup attaches to FFN-only (not attention); this is enforced
     at the MODEL level (LoRAMoEModel in models/lora_models.py defaults to the
@@ -216,8 +218,8 @@ class LoRAMoEAdapter(nn.Module):
         # Merge
         merged = (per_expert * gate_w.unsqueeze(-1)).sum(dim=2)
         out = merged * self.scaling
-        # Balance loss (coefficient of variation of gate usage across tokens),
-        # Dou 2023 Eq. 8.
+        # Balance loss: squared coefficient of variation of the batch-mean gate
+        # weights over the K experts (conventional form, see class docstring).
         gate_mean = gate_w.mean(dim=(0, 1))  # (K,)
         var = gate_mean.var(unbiased=False)
         mean = gate_mean.mean()

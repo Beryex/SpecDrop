@@ -11,7 +11,10 @@ Two recurring failure modes that previously produced silently-wrong results:
 
    Fix: `advance_softspecdrop_to_terminal()` advances BOTH current_epoch and
    current_step, then asserts `_warmup_progress() == 1.0` post-advance.
-   Refuses to proceed if the assertion fails.
+   Refuses to proceed if the assertion fails. LoRA runs instead call
+   `set_softspecdrop_to_checkpoint_state()` AFTER building the LoRATrainer
+   (whose __init__ resets the step count): it restores the warmup progress at
+   which the reported checkpoint was scored, plus the per-category fractions.
 
 2. **Silent cfg-key fallback.** `.get(key, default)` masks config corruption:
    if the trained model used `num_experts=10` but the cfg key got renamed,
@@ -34,9 +37,9 @@ def advance_softspecdrop_to_terminal(algorithm, total_epochs: int) -> None:
 
     Handles both `warmup_unit='epoch'` (CIFAR/ViT/legacy NLP convention) and
     `'step'` (LoRA, NLP 500M convention). Setting only `current_epoch` is a
-    silent no-op for step-mode → mask stays at uniform-start (cf. 2026-05-02
-    LoRA spec bug, where this produced a 0/15 diagonal-hits artifact instead
-    of the real trained-mask ablation matrix).
+    silent no-op for step-mode → mask stays at uniform-start. For LoRA runs use
+    `set_softspecdrop_to_checkpoint_state()`, called after the LoRATrainer is
+    built.
 
     Args:
         algorithm: a `SoftSpecDrop` instance, OR `None` (no-op).

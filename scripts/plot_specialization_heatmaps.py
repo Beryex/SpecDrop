@@ -15,7 +15,7 @@ Usage:
         --diag-dir outputs/analysis/nlp_diag \\
         --output outputs/analysis/specialization_heatmaps
 
-Runs locally — only needs the 5 diag JSON files rsync'd back from 5090.
+Runs on CPU — only needs the 5 diag JSON files written by the diagnose scripts.
 """
 import argparse
 import json
