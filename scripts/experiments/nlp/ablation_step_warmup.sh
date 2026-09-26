@@ -20,8 +20,11 @@
 #     warmup_unit = 'step'   ← ONLY difference vs the 100M baseline
 #     frac_per_category computed from 100M train cache at config-gen
 #
-# Baseline for comparison: phase3c_pa0.6_beta2.0_se0.5_s{42,123,456}
-#   3-seed mean = 55.07 PPL (epoch-based warmup).
+# Baseline for comparison: phase3c_pa0.6_beta2.0_se0.5_s{42,123,456} under
+#   outputs/rtx5090_nlp_mini_ablation_epoch/ (the epoch-warmup cell of
+#   archive/scripts/rtx5090_3c_phaseP_se_sweep_epoch.sh; generated here if absent),
+#   3-seed mean = 55.07 PPL (epoch-based warmup). It lives outside OUTDIR_BASE so it
+#   never collides with the step-warmup 3c cells of nlp/ablation_se.sh.
 #
 # Output: outputs/rtx5090_nlp_mini_ablation/phase3d_pa0.6_beta2.0_se0.5_stepwarmup_s{seed}/
 # Per GPU: 1 run × ~70 min. Wall clock ≈ 70 min on 3 GPUs in parallel.
@@ -29,6 +32,7 @@
 
 PYTHON=${PYTHON:-python}
 OUTDIR_BASE="./outputs/rtx5090_nlp_mini_ablation"
+EPOCH_BASE="./outputs/rtx5090_nlp_mini_ablation_epoch"
 DEVICE="cuda"
 if [ -n "$SEEDS_OVERRIDE" ]; then SEEDS=($SEEDS_OVERRIDE); else SEEDS=(42 123 456); fi
 
@@ -58,6 +62,7 @@ run_cell() {
         ENAME="phase3c_pa0.6_beta2.0_se0.5_s${SEED}"
     fi
     local ODIR="${OUTDIR_BASE}/${ENAME}"
+    [ "$WUNIT" = "step" ] || ODIR="${EPOCH_BASE}/${ENAME}"
     if [ -f "$ODIR/results.json" ]; then
         echo "  $ENAME — DONE, skipping"; return
     fi
@@ -132,8 +137,9 @@ echo "============================================================"
 $PYTHON - <<'EOF'
 import json, os
 base = 'outputs/rtx5090_nlp_mini_ablation'
+epoch_base = 'outputs/rtx5090_nlp_mini_ablation_epoch'
 
-def agg(pattern):
+def agg(pattern, base=base):
     ppls = []
     for s in (42, 123, 456):
         p = os.path.join(base, pattern.format(s=s), 'results.json')
@@ -146,7 +152,7 @@ def agg(pattern):
     return None
 
 step = agg('phase3d_pa0.6_beta2.0_se0.5_stepwarmup_s{s}')
-epoch = agg('phase3c_pa0.6_beta2.0_se0.5_s{s}')
+epoch = agg('phase3c_pa0.6_beta2.0_se0.5_s{s}', epoch_base)
 
 print(f"{'config':>30}  {'mean':>8}  {'std':>6}  seeds")
 if epoch:
