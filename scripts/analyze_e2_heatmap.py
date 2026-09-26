@@ -196,7 +196,10 @@ def plot_grid(method_kds, out_pdf):
     cb.outline.set_linewidth(0.5)
     cb.set_label('$|\\Delta_{k,c}|$ / row max', fontsize=7, labelpad=3)
 
-    plt.savefig(out_pdf, bbox_inches='tight', pad_inches=0.02)
+    # dpi=600: each 20x20 heatmap is embedded at ~50 px per cell, so cell edges
+    # line up with the assigned-branch outlines (the default 100 dpi gave 8-9 px
+    # cells, offset from the outlines by up to ~1 pt).
+    plt.savefig(out_pdf, bbox_inches='tight', pad_inches=0.02, dpi=600)
     plt.close()
     print(f'  saved {out_pdf}')
     for m in methods:

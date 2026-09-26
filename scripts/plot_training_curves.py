@@ -10,6 +10,7 @@ Usage (from the repo root):
   python scripts/plot_training_curves.py --output outputs/analysis/fig_training_curves.pdf
 """
 import argparse
+import os
 import json
 
 import numpy as np
@@ -49,6 +50,7 @@ def main():
         ax.spines[side].set_visible(False)
     ax.legend(loc='lower right', frameon=False, fontsize=8)
     fig.tight_layout()
+    os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
     fig.savefig(args.output)
 
 

@@ -1,4 +1,4 @@
-"""Tests for scripts/plot_intro_specialization.py — data loaders + synthesis."""
+"""Tests for scripts/plot_intro_specialization.py — data loaders, normalization, badges."""
 import sys, os
 import numpy as np
 import pytest
@@ -73,40 +73,6 @@ def test_load_lora_rectangular_15x20():
     from scripts.plot_intro_specialization import load_lora_ours
     m = load_lora_ours()
     assert m.shape == (15, 20)
-
-
-def test_synthesize_uniform_no_diagonal():
-    """Synthesized baseline must have NO per-cell structure: diag/off ratio ~1.0."""
-    from scripts.plot_intro_specialization import synthesize_uniform
-    ours = np.eye(20) * 10 + np.random.RandomState(0).rand(20, 20) * 2  # strong diag
-    base = synthesize_uniform(ours, seed=42)
-    assert base.shape == (20, 20)
-    diag = base.diagonal().mean()
-    off = (base.sum() - base.trace()) / (base.size - 20)
-    # synthesized baseline should NOT have diagonal pattern
-    ratio = diag / max(off, 1e-12)
-    assert 0.5 < ratio < 1.6, f'synthesized baseline diag/off={ratio:.2f} should be ~1.0'
-
-
-def test_synthesize_uniform_rectangular():
-    """LoRA-style 15×20 — works with non-square shapes."""
-    from scripts.plot_intro_specialization import synthesize_uniform
-    rng = np.random.RandomState(1)
-    ours = rng.rand(15, 20) * 0.05
-    base = synthesize_uniform(ours, seed=1)
-    assert base.shape == (15, 20)
-    assert base.min() >= 0  # |.|
-
-
-def test_synthesize_uniform_magnitude_matched():
-    """Synthesized baseline should be at similar magnitude to off-diagonal of ours."""
-    from scripts.plot_intro_specialization import synthesize_uniform
-    rng = np.random.RandomState(2)
-    ours = np.full((10, 10), 5.0)  # uniform off-diag
-    np.fill_diagonal(ours, 50.0)   # strong diag
-    base = synthesize_uniform(ours, seed=2)
-    # Mean of base should be close to 5.0 (off-diag of ours), not 50 (diag)
-    assert abs(base.mean() - 5.0) < 3.0, f'expected ~5, got {base.mean():.2f}'
 
 
 @_needs(CIFAR_OURS, CIFAR_NR, VIT_OURS, NLP_OURS, LORA_OURS)
@@ -215,23 +181,24 @@ def test_paired_normalize_all_zero():
     assert np.allclose(o_n, 0) and np.allclose(b_n, 0)
 
 
-def test_diag_hits_annotations_match_paper():
-    """DIAG_HITS list values match paper Sec 5.3 specialization claims."""
-    from scripts.plot_intro_specialization import DIAG_HITS
-    # SlimPajama counts the 6 domains with validation coverage (Book has none).
-    assert DIAG_HITS == [(13, 20), (46, 46), (6, 6), (2, 15)]
+@_needs(CIFAR_OURS, VIT_OURS, NLP_OURS, LORA_OURS)
+def test_diag_hits_match_paper():
+    """Badges computed from the seed-42 diag JSONs match Fig. 1 (Sec. 5.6)."""
+    from scripts.plot_intro_specialization import diag_hits
+    # SlimPajama counts the 6 domains with validation coverage (Book has none);
+    # SuperNI the 15 clusters with held-out test tasks.
+    assert diag_hits() == [(13, 20), (46, 46), (6, 6), (2, 15)]
 
 
-def test_load_no_routing_returns_none_when_missing(tmp_path, monkeypatch):
-    """Real-data loaders return None when file missing → synthesis fallback."""
+def test_load_no_routing_raises_when_missing(tmp_path, monkeypatch):
+    """A missing No-Routing diag JSON is an error (no synthesized stand-in)."""
     from scripts.plot_intro_specialization import (
         load_vit_no_routing, load_nlp_no_routing, load_lora_no_routing,
     )
-    # Run from a tmp dir with NO outputs/ — all real-data loaders should return None
-    monkeypatch.chdir(tmp_path)
-    assert load_vit_no_routing() is None
-    assert load_nlp_no_routing() is None
-    assert load_lora_no_routing() is None
+    monkeypatch.chdir(tmp_path)  # no outputs/ here
+    for loader in (load_vit_no_routing, load_nlp_no_routing, load_lora_no_routing):
+        with pytest.raises(FileNotFoundError):
+            loader()
 
 
 @_needs(NLP_OURS_LEGACY)

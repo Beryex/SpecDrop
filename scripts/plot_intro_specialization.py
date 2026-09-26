@@ -13,10 +13,11 @@ Real data sources (preferred):
                             (falls back to phaseP_pa0.6_wr1.0_s42 for ours)
   LoRA ours / no-routing  : outputs/analysis/lora_diag/{ours, mb_lora_no_routing_se1.0}_s42.json
 
-If a no-routing baseline diagnostic file is missing, the script falls back
-to synthesizing a uniform-magnitude-matched noise baseline (faithful
-illustration of `algorithms.no_dropout.NoDropout` analytical behaviour).
-The real diagnostic JSONs are produced by scripts/experiments/alignment/run.sh.
+All eight diagnostic JSONs are required (a missing file raises
+FileNotFoundError); they are produced by scripts/experiments/alignment/run.sh.
+The diag-argmax badges are computed from the same seed-42 JSONs (CIFAR:
+most-sensitive branch per superclass, ties to the lowest branch index;
+ViT/NLP/LoRA: the `diag_hits` field written by the diagnose scripts).
 
 Sign / magnitude normalization (per-panel):
   Convert every Δ to "ablation importance" = |Δ|, max-normalize per column
@@ -24,7 +25,7 @@ Sign / magnitude normalization (per-panel):
 
 Usage:
   python scripts/plot_intro_specialization.py \\
-         --output outputs/analysis/fig_intro_specialization
+         --output outputs/analysis/fig_intro_specialization   # writes .pdf and .png
 """
 from __future__ import annotations
 
@@ -87,61 +88,35 @@ def load_vit_ours() -> np.ndarray:
     return _load_vit_diag('outputs/analysis/vit_diag/ours_vit_s42.json')
 
 
-def load_vit_no_routing() -> np.ndarray | None:
-    """Architecture-matched ViT no-routing (+SE, as ours) diagnostic; else None → synthesize."""
-    p = 'outputs/analysis/vit_diag/mbvit_no_routing_se_s42.json'
-    return _load_vit_diag(p) if os.path.exists(p) else None
+def load_vit_no_routing() -> np.ndarray:
+    """Architecture-matched ViT no-routing (+SE, as ours) diagnostic."""
+    return _load_vit_diag('outputs/analysis/vit_diag/mbvit_no_routing_se_s42.json')
 
 
-def load_nlp_ours() -> np.ndarray:
-    """Try new (rtx5090_15) name first, fall back to legacy `phaseP_pa0.6_wr1.0`."""
+def _nlp_ours_path() -> str:
+    """Current name first, then the legacy `phaseP_pa0.6_wr1.0` name."""
     for p in ('outputs/analysis/nlp_diag/ours_phaseP_s42.json',
               'outputs/analysis/nlp_diag/phaseP_pa0.6_wr1.0_s42.json'):
         if os.path.exists(p):
-            return _load_nlp_diag(p)
+            return p
     raise FileNotFoundError('NLP ours diag JSON not found')
 
 
-def load_nlp_no_routing() -> np.ndarray | None:
-    p = 'outputs/analysis/nlp_diag/no_routing_se05_s42.json'
-    return _load_nlp_diag(p) if os.path.exists(p) else None
+def load_nlp_ours() -> np.ndarray:
+    return _load_nlp_diag(_nlp_ours_path())
+
+
+def load_nlp_no_routing() -> np.ndarray:
+    return _load_nlp_diag('outputs/analysis/nlp_diag/no_routing_se05_s42.json')
 
 
 def load_lora_ours() -> np.ndarray:
     return _load_lora_diag('outputs/analysis/lora_diag/ours_s42.json')
 
 
-def load_lora_no_routing() -> np.ndarray | None:
-    p = 'outputs/analysis/lora_diag/mb_lora_no_routing_se1.0_s42.json'  # +SE, as ours
-    return _load_lora_diag(p) if os.path.exists(p) else None
-
-
-# ─── Synthesize uniform baseline for ViT / NLP / LoRA ──────────────────────
-def synthesize_uniform(ours_mat: np.ndarray, seed: int = 42) -> np.ndarray:
-    """Generate a baseline-like matrix with NO per-category structure.
-
-    Approach: take ours' OFF-diagonal magnitude statistics (median + std),
-    sample uniform Gaussian noise at that scale across the entire matrix.
-    Result: a heatmap where (i,j) values are statistically indistinguishable
-    by row or column → no diagonal, no specialization pattern.
-
-    This is a faithful illustration of `NoDropout` (uniform 1/K mask)
-    behavior: ablating any branch removes 1/K of the contribution
-    proportionally for ALL categories, so per-cell Δ has no per-cat
-    structure beyond measurement noise.
-    """
-    rng = np.random.RandomState(seed)
-    R, C = ours_mat.shape
-    if R == C:
-        eye = np.eye(R, dtype=bool)
-        off_vals = ours_mat[~eye]
-    else:
-        off_vals = ours_mat.flatten()
-    mu = float(np.median(off_vals))
-    sigma = float(off_vals.std()) * 0.5
-    # Sample around the off-diag median with mild dispersion. Take |.| to
-    # keep colour scale on positive side (we plot magnitude).
-    return np.abs(rng.normal(loc=mu, scale=max(sigma, abs(mu) * 0.15), size=(R, C)))
+def load_lora_no_routing() -> np.ndarray:
+    # +SE, as ours
+    return _load_lora_diag('outputs/analysis/lora_diag/mb_lora_no_routing_se1.0_s42.json')
 
 
 # ─── Plot ──────────────────────────────────────────────────────────────────
@@ -151,16 +126,27 @@ COL_LABELS = ['CIFAR-100 — aligned\n(K=20 superclasses)',
               'LoRA SuperNI — fuzzy\n(K=20 task clusters)']
 ROW_LABELS = ['Ours', 'No-Routing\ncontrol']
 
-# Per-setting diagonal-argmax annotations on ours panels (paper Sec 5.3).
-# Format: (diag_hits, n_cats_or_branches). Embedded as a small top-right
-# text on each ours panel so readers don't need to cross-reference the
-# section text.
-#   CIFAR  : 13/20  (per pruning_sensitivity in specialization/ours_s42.json)
-#   ViT    : 46/46  (perfect alignment, vit_diag/ours_vit_s42.json::diag_hits)
-#   NLP    : 6/6    (6 domains with validation coverage; Book has none,
-#                    nlp_diag/ours_phaseP_s42.json::diag_hits)
-#   LoRA   : 2/15   (lora_diag/ours_s42.json::diag_hits)
-DIAG_HITS = [(13, 20), (46, 46), (6, 6), (2, 15)]  # SlimPajama: 6 domains with val coverage
+def _json_badge(path: str, total_key: str) -> tuple[int, int]:
+    d = json.load(open(path))
+    return int(d['diag_hits']), int(d[total_key])
+
+
+def diag_hits() -> list[tuple[int, int]]:
+    """Seed-42 diag-argmax badges (hits, categories) for the four ours panels.
+
+    CIFAR: superclasses whose most pruning-sensitive branch is the round-robin
+    assigned branch c mod K (np.argmax breaks ties to the lowest branch index,
+    as Tab. 1). ViT / NLP / LoRA: the `diag_hits` field of the diag JSONs
+    (NLP counts the domains with validation coverage; LoRA the clusters with
+    held-out test tasks).
+    """
+    kd = load_cifar('ours')
+    M, K = kd.shape
+    cifar = int(sum(int(np.argmax(kd[c])) == c % K for c in range(M)))
+    return [(cifar, M),
+            _json_badge('outputs/analysis/vit_diag/ours_vit_s42.json', 'n_cats'),
+            _json_badge(_nlp_ours_path(), 'n_domains'),
+            _json_badge('outputs/analysis/lora_diag/ours_s42.json', 'n_cats')]
 
 
 def per_row_normalize(mat: np.ndarray) -> np.ndarray:
@@ -191,10 +177,8 @@ def paired_normalize(ours: np.ndarray, baseline: np.ndarray
     - baseline preserves absolute magnitude relative to ours: where
       baseline cells fall below ours' max they look proportionally
       faint (which is the typical case — no specialization → small Δ);
-      where baseline has a single hot pixel exceeding ours' max (LoRA
-      mb_lora_no_routing has one "hot row" 3× ours' max), it CLIPS to
-      saturation=1, signaling "baseline has a bigger absolute outlier
-      here even though it lacks diagonal structure".
+      a baseline cell above ours' max would clip to saturation=1 (none
+      does in the paper figure).
     - Each setting normalizes independently (no cross-setting shared
       max — would crush low-ratio settings against high-ratio ones).
 
@@ -210,21 +194,11 @@ def paired_normalize(ours: np.ndarray, baseline: np.ndarray
 
 def plot_grid(out_base: str):
     cifar_o, cifar_n = load_cifar('ours'), load_cifar('no_routing')
-    vit_o = load_vit_ours()
-    nlp_o = load_nlp_ours()
-    lora_o = load_lora_ours()
-    # Try real no-routing baselines first; fall back to synthesized noise
-    # if rtx5090_15 hasn't run yet.
-    vit_n_real = load_vit_no_routing()
-    nlp_n_real = load_nlp_no_routing()
-    lora_n_real = load_lora_no_routing()
-    vit_n = vit_n_real if vit_n_real is not None else synthesize_uniform(vit_o, seed=42)
-    nlp_n = nlp_n_real if nlp_n_real is not None else synthesize_uniform(nlp_o, seed=42)
-    lora_n = lora_n_real if lora_n_real is not None else synthesize_uniform(lora_o, seed=42)
-    print('  no-routing baseline source:')
-    print(f'    ViT:  {"real" if vit_n_real is not None else "synthesized"}')
-    print(f'    NLP:  {"real" if nlp_n_real is not None else "synthesized"}')
-    print(f'    LoRA: {"real" if lora_n_real is not None else "synthesized"}')
+    vit_o, vit_n = load_vit_ours(), load_vit_no_routing()
+    nlp_o, nlp_n = load_nlp_ours(), load_nlp_no_routing()
+    lora_o, lora_n = load_lora_ours(), load_lora_no_routing()
+    badges = diag_hits()
+    print(f'  diag-argmax badges: {badges}')
 
     cols = [(cifar_o, cifar_n), (vit_o, vit_n), (nlp_o, nlp_n), (lora_o, lora_n)]
 
@@ -240,8 +214,8 @@ def plot_grid(out_base: str):
         # the column. Ensures baseline panels look light (faint) when their
         # absolute Δ is small relative to ours' diagonal, instead of being
         # saturated by per-row normalize. Cross-setting independent — keeps
-        # per-setting contrast intact (ImageNet 26× and LoRA 2.1× both
-        # readable in their own panels).
+        # per-setting contrast intact (ViT's strong diagonal and the weak
+        # SuperNI one are each readable in their own panels).
         ours_n, base_n = paired_normalize(ours_mat, base_mat)
         for r, mat_norm in enumerate([ours_n, base_n]):
             ax = axes[r, c]
@@ -256,7 +230,7 @@ def plot_grid(out_base: str):
                 ax.set_title(COL_LABELS[c], fontsize=15, pad=8)
                 # Top-right diag-argmax annotation on each ours panel (the
                 # diagonal ends bottom-right, so the badge must not sit there).
-                hits, total = DIAG_HITS[c]
+                hits, total = badges[c]
                 ax.text(0.975, 0.97, f'diag: {hits}/{total}',
                           transform=ax.transAxes, ha='right', va='top',
                           fontsize=16, color='black',
@@ -271,7 +245,9 @@ def plot_grid(out_base: str):
     out_pdf = f'{out_base}.pdf'
     out_png = f'{out_base}.png'
     os.makedirs(os.path.dirname(out_base) or '.', exist_ok=True)
-    fig.savefig(out_pdf, bbox_inches='tight', pad_inches=0.05)
+    # dpi=600 embeds each heatmap at ~6 px per cell so cell edges are even
+    # (the default 100 dpi gave 3-5 px cells on the 46x46 ViT panel).
+    fig.savefig(out_pdf, bbox_inches='tight', pad_inches=0.05, dpi=600)
     fig.savefig(out_png, bbox_inches='tight', pad_inches=0.05, dpi=200)
     plt.close(fig)
     print(f'[plot_intro_specialization] wrote {out_pdf}')
@@ -294,9 +270,14 @@ def plot_grid(out_base: str):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument('--output', default='outputs/analysis/fig_intro_specialization')
+    ap.add_argument('--output', default='outputs/analysis/fig_intro_specialization',
+                    help='output path without extension (.pdf and .png are written)')
     args = ap.parse_args()
-    plot_grid(args.output)
+    out = args.output
+    for ext in ('.pdf', '.png'):
+        if out.endswith(ext):
+            out = out[:-len(ext)]
+    plot_grid(out)
 
 
 if __name__ == '__main__':

@@ -139,7 +139,7 @@ PANELS = [
         'setting': 'CIFAR-100', 'sweep': 'pa',
         'xs':       [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0],
         'factory':  cifar_pa, 'metric': 'best_top1', 'hib': True,
-        'deployed': 0.7, 'xlabel': r'$p_a$', 'ylabel': 'Top-1 (%)',
+        'deployed': 0.7, 'xlabel': r'$p_\mathrm{a}$', 'ylabel': 'Top-1 (%)',
     },
     {
         'setting': 'CIFAR-100', 'sweep': 'wr',
@@ -158,7 +158,7 @@ PANELS = [
         'setting': 'ImageNet ViT', 'sweep': 'pa',
         'xs':       [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'factory':  vit_pa, 'metric': 'best_top1', 'hib': True,
-        'deployed': 0.6, 'xlabel': r'$p_a$', 'ylabel': 'Top-1 (%)',
+        'deployed': 0.6, 'xlabel': r'$p_\mathrm{a}$', 'ylabel': 'Top-1 (%)',
     },
     {
         'setting': 'ImageNet ViT', 'sweep': 'beta',
@@ -177,7 +177,7 @@ PANELS = [
         'setting': 'SlimPajama', 'sweep': 'pa',
         'xs':       [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'factory':  nlp_pa, 'metric': 'best_val_ppl', 'hib': False,
-        'deployed': 0.6, 'xlabel': r'$p_a$', 'ylabel': 'Val PPL',
+        'deployed': 0.6, 'xlabel': r'$p_\mathrm{a}$', 'ylabel': 'Val PPL',
     },
     {
         'setting': 'SlimPajama', 'sweep': 'beta',
@@ -196,7 +196,7 @@ PANELS = [
         'setting': 'LoRA SuperNI', 'sweep': 'pa',
         'xs':       [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'factory':  lora_pa, 'metric': 'eval_rouge_l', 'hib': True,
-        'deployed': 0.8, 'xlabel': r'$p_a$', 'ylabel': 'ROUGE-L',
+        'deployed': 0.8, 'xlabel': r'$p_\mathrm{a}$', 'ylabel': 'ROUGE-L',
     },
     {
         'setting': 'LoRA SuperNI', 'sweep': 'beta',
@@ -302,7 +302,7 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
         # Chain reference line: previous row's deployed value (rows 1, 2 only).
         anchor = _prev_row_anchor(panel['setting'], sweep)
         if anchor is not None:
-            ref_label_map = {'pa': r'$p_a$', 'wr': r'$w_r$', 'beta': r'$\beta$'}
+            ref_label_map = {'pa': r'$p_\mathrm{a}$', 'wr': r'$w_r$', 'beta': r'$\beta$'}
             ax.axhline(anchor[1], color=chain_color, linestyle=':',
                         linewidth=1.0, alpha=0.85, zorder=1,
                         label=f'best @ {ref_label_map[anchor[0]]} sweep')
@@ -328,7 +328,7 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
         # overlays the errorbar's solid blue dot, making the "this point
         # is structurally not in the search space" status visually obvious
         # and preempting "why didn't you pick the lower/higher one?" reader
-        # questions on NLP + ViT (where pa=0.5 looks competitive).
+        # questions on SlimPajama + SuperNI (where pa=0.5 looks competitive).
         if sweep == 'pa' and 0.5 in xs:
             i_off = xs.index(0.5)
             ax.scatter([xs_a[i_off]], [ys_a[i_off]], s=70,
@@ -367,10 +367,12 @@ def main(out_base: str = 'outputs/analysis/fig_ablation_curves'):
             s.set_color('#666'); s.set_linewidth(0.7)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.grid(axis='y', linestyle=':', linewidth=0.5, color='#bbb', alpha=0.6)
+        # Solid light grid, so the dotted dark reference line stays distinct.
+        ax.grid(axis='y', linestyle='-', linewidth=0.4, color='#e6e6e6')
         # No per-panel legend: in every panel it covered data points; the
         # dotted reference line is explained in the figure caption.
 
+    os.makedirs(os.path.dirname(out_base) or '.', exist_ok=True)
     out_pdf = f'{out_base}.pdf'
     out_png = f'{out_base}.png'
     fig.savefig(out_pdf, bbox_inches='tight')
