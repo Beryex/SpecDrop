@@ -4,13 +4,13 @@
 #
 # Phases:
 #  1. Env check (CUDA + bf16)
-#  2. ImageNet HF cache probe (warns if 150GB not pre-populated)
+#  2. ImageNet HF cache probe (warns if 167GB not pre-populated)
 #  3. 6 faithful methods × 20 steps on 512-image subset
 #  4. torch.compile mode comparison (ours method)
 #  5. Time estimate for full 100-ep × 3-seed run
 #
 # Typical runtime: ~10-15 min after ImageNet cache exists. If HF cache is empty
-# the first ViT method will block on a 150GB download — populate in advance.
+# the first ViT method will block on a 167GB download — populate in advance.
 ###############################################################################
 
 PYTHON=${PYTHON:-python}
@@ -39,7 +39,7 @@ cache = Path('$IMAGENET_DIR')
 if not cache.exists() or not any(cache.rglob('*.arrow')):
     print('  ⚠ ImageNet cache empty at $IMAGENET_DIR')
     print('    Pre-populate with data.imagenet.ensure_downloaded() (HF dataset ILSVRC/imagenet-1k; gated, accept its terms first).')
-    print('    HF will otherwise try a 150GB auto-fetch on first run.')
+    print('    HF will otherwise try a 167GB auto-fetch on first run.')
 else:
     print(f'  ImageNet cache present at $IMAGENET_DIR')
 "

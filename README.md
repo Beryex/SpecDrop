@@ -43,7 +43,7 @@ conda create -n SpecDrop python=3.12 -y
 conda activate SpecDrop
 pip install -r requirements.txt
 ```
-3. Verify the installation. Without a GPU, run the unit tests (`python -m pytest tests/ -q`). With a CUDA GPU, run the smoke covering all four settings (~10 min warm; ~30–50 min on a first run). First-run caveat: the smoke itself triggers the one-time dataset downloads — small for CIFAR/LoRA (gated Llama-3.2-1B base + a ~0.8 GB shallow SuperNI clone, ~4 GB on disk), large for NLP/ViT (SlimPajama ~14 GB download, ~24 GB decompressed; ImageNet-1K ~150 GB, gated) — so populate the big caches in advance or start with the cifar/lora smokes. The NLP smoke also builds the tokenized SlimPajama caches that `reproduce.sh nlp` and `ablation_nlp` expect, so run it before those targets.
+3. Verify the installation. Without a GPU, run the unit tests (`python -m pytest tests/ -q`). With a CUDA GPU, run the smoke covering all four settings (~10 min warm; ~30–50 min on a first run). First-run caveat: the smoke itself triggers the one-time dataset downloads — small for CIFAR/LoRA (gated Llama-3.2-1B base + a ~0.8 GB shallow SuperNI clone, ~4 GB on disk), large for NLP/ViT (SlimPajama ~14 GB download, ~24 GB decompressed; ImageNet-1K ~167 GB download plus a same-size prepared copy, gated) — so populate the big caches in advance or start with the cifar/lora smokes. The NLP smoke also builds the tokenized SlimPajama caches that `reproduce.sh nlp` and `ablation_nlp` expect, so run it before those targets.
 ```bash
 bash reproduce.sh smoke
 ```
@@ -57,8 +57,8 @@ Training metrics are logged to Weights & Biases by default: run `wandb login` on
 ```bash
 # vit/lora read the operating point from the sweep markers; when skipping the
 # ablation chains, export the paper's values instead:
-BEST_PA=0.6 BEST_BETA=1 BEST_SE=2.0  bash scripts/experiments/vit/main_table.sh
-BEST_PA=0.8 BEST_BETA=1 BEST_SE=1.0  bash scripts/experiments/lora/main_table.sh
+BEST_PA=0.6 BEST_BETA=1.0 BEST_SE=2.0  bash scripts/experiments/vit/main_table.sh
+BEST_PA=0.8 BEST_BETA=1.0 BEST_SE=1.0  bash scripts/experiments/lora/main_table.sh
 # vit/main_table.sh gives 6 of Tab. 2's 9 rows (plus the deployed all-blocks Soft MoE
 # of the appendix); the tuned and compute-matched Soft MoE and the ALF router rows:
 FOREGROUND=1 bash scripts/experiments/softmoe_study_finals.sh softmoe_study_r7   # tuned
@@ -177,8 +177,8 @@ All datasets are fetched automatically on first run (CIFAR-100 via torchvision, 
 | Dataset | Source | Size | First-run time |
 |---|---|---|---|
 | CIFAR-100 | torchvision | ~170 MB | ~1 min |
-| ImageNet-1K | HF `ILSVRC/imagenet-1k` (gated: accept the terms on its Hub page, then run `hf auth login` or set `HF_TOKEN`) | ~150 GB | ~30 min on fast network |
-| SlimPajama-6B | HF `DKYoon/SlimPajama-6B` | ~14 GB download (~24 GB decompressed); ~12 GB tokenized at seq=512 | ~30 min tokenize at 500M tokens |
+| ImageNet-1K | HF `ILSVRC/imagenet-1k` (gated: accept the terms on its Hub page, then run `hf auth login` or set `HF_TOKEN`) | ~167 GB download (train/validation/test) plus a same-size prepared copy | ~30 min on fast network |
+| SlimPajama-6B | HF `DKYoon/SlimPajama-6B` | ~14 GB download (~24 GB decompressed); ~5 GB tokenized at seq=512 (int64) | ~30 min tokenize at 500M tokens |
 | SuperNI v2 | git clone of `allenai/natural-instructions` (automatic; task JSONs with the Domains fields we need) | ~0.8 GB download (shallow), ~4 GB on disk | ~2 min |
 | Llama-3.2-1B | HF `meta-llama/Llama-3.2-1B` | ~2.5 GB | ~3 min (requires HF gated-model access) |
 | BREEDS hierarchy | bundled at `data/breeds_hierarchy/`: unmodified hierarchy files from [MadryLab/BREEDS-Benchmarks](https://github.com/MadryLab/BREEDS-Benchmarks) (Santurkar et al., ICLR 2021), which states no license; redistributed with attribution and not covered by this repository's MIT license (see `data/breeds_hierarchy/NOTICE`) | <1 MB | n/a |

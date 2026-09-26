@@ -5,7 +5,7 @@
 # Final ours config is chosen by the 5a → 5b → 5c ablation chain, which
 # writes _best_{pa,beta,se}.txt markers that this script reads. Without the
 # markers it stops with instructions; to skip the chain, export the paper's
-# final operating point directly: BEST_PA=0.6 BEST_BETA=1 BEST_SE=2.0.
+# final operating point directly: BEST_PA=0.6 BEST_BETA=1.0 BEST_SE=2.0.
 #
 # METHOD COMPONENTS (all always-on for ours, matching paper main body):
 #   • Uniform K=46 branches (BREEDS superclass mapping)

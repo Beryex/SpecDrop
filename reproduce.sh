@@ -15,7 +15,7 @@
 #                 sweep chain ~75; needs the tokenized caches built by the NLP smoke).
 #   vit           Table 2: ImageNet ViT-S/16 K=46 BREEDS, all 9 table rows × 3 seeds × 100 epochs
 #                 (table rows ~850 GPU-hours; sweep chain ~225; ImageNet-1K download is
-#                 one-time, ~150 GB).
+#                 one-time, ~167 GB plus a same-size prepared copy).
 #   lora          Table 4: SuperNI Llama-3.2-1B + LoRA, 7 methods × 3 seeds × 3 epochs
 #                 (main table ~235 GPU-hours; sweep chain ~115; HF Llama download + SuperNI
 #                 tasks are one-time).

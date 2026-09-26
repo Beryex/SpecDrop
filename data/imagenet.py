@@ -228,7 +228,7 @@ def ensure_downloaded(data_dir='./data_cache/imagenet'):
     Returns True if ready.
     """
     from datasets import load_dataset
-    print("Checking ImageNet-1K (~150GB)...")
+    print("Checking ImageNet-1K (~167GB download, plus a same-size prepared copy)...")
     train_ds = load_dataset('ILSVRC/imagenet-1k', split='train',
                             cache_dir=data_dir)
     val_ds = load_dataset('ILSVRC/imagenet-1k', split='validation',
