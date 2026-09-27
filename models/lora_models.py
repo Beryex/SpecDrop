@@ -58,12 +58,12 @@ def _load_hf_causal_lm(base_model_name: str,
             "transformers is required for LoRA models; install with "
             "`pip install transformers>=4.48 accelerate>=0.30`.") from e
 
-    # HF transformers 4.48 renamed `torch_dtype` kwarg → `dtype` and deprecated
-    # the old name. Use `dtype` on ≥4.48 to avoid the warning; fall back to
-    # the legacy kwarg on older versions for backward-compat.
+    # HF transformers 4.56 renamed the `torch_dtype` kwarg → `dtype` and deprecated
+    # the old name (4.48–4.55 reject `dtype`). Use `dtype` on ≥4.56 to avoid the
+    # warning; fall back to the legacy kwarg on older versions.
     kwargs = {}
     tf_ver = tuple(int(x) for x in transformers.__version__.split('.')[:2])
-    if tf_ver >= (4, 48):
+    if tf_ver >= (4, 56):
         kwargs['dtype'] = torch_dtype
     else:
         kwargs['torch_dtype'] = torch_dtype

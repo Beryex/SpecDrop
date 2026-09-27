@@ -102,9 +102,9 @@ name = "$BASE_MODEL"
 print(f"  loading tokenizer {name}...")
 tok = AutoTokenizer.from_pretrained(name)
 print(f"  loading model {name} (bf16) — first run downloads ~2.5 GB...")
-# HF transformers 4.48 renamed torch_dtype → dtype (deprecation warning).
+# HF transformers 4.56 renamed torch_dtype → dtype (deprecation warning); 4.48–4.55 reject dtype.
 tf_ver = tuple(int(x) for x in transformers.__version__.split('.')[:2])
-dtype_kw = 'dtype' if tf_ver >= (4, 48) else 'torch_dtype'
+dtype_kw = 'dtype' if tf_ver >= (4, 56) else 'torch_dtype'
 try:
     m = AutoModelForCausalLM.from_pretrained(name, **{dtype_kw: torch.bfloat16})
 except Exception as e:
