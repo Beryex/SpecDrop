@@ -179,7 +179,8 @@ def rerun_rouge_for_cell(cell_dir: str, device: str = 'cuda',
     require_keys(cfg, ('data', 'model', 'training'),
                   f'cfg in {cell_dir}')
     require_keys(cfg['data'], ('num_clusters',), f'cfg["data"] in {cell_dir}')
-    require_keys(cfg['model'], ('num_experts',), f'cfg["model"] in {cell_dir}')
+    if (cfg.get('algorithm') or {}).get('type') in ('soft_specdrop', 'no_dropout'):
+        require_keys(cfg['model'], ('num_experts',), f'cfg["model"] in {cell_dir}')
     K = cfg['data']['num_clusters']
     algorithm = None
     acfg = cfg.get('algorithm', {}) or {}

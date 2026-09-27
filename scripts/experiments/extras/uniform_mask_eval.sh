@@ -57,8 +57,8 @@ run_p0_cell() {
     echo "  [P0 ${SETTING} s${SEED}] running ... ($(date))"
     $PYTHON scripts/eval_uniform_mask.py \
         --setting "$SETTING" --seed "$SEED" --device "$DEVICE" \
-        2>&1 | tee "outputs/eval_uniform_mask/${SETTING}_s${SEED}.log" || \
-        echo "  [P0 ${SETTING} s${SEED}] FAILED — check log"
+        2>&1 | tee "outputs/eval_uniform_mask/${SETTING}_s${SEED}.log"
+    [ "${PIPESTATUS[0]}" -eq 0 ] || echo "  [P0 ${SETTING} s${SEED}] FAILED — check log"
     echo "  [P0 ${SETTING} s${SEED}] finished: $(date)"
 }
 
