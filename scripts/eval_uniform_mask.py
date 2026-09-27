@@ -129,9 +129,9 @@ def eval_cifar(seed: int, device: str) -> dict:
     from algorithms.no_dropout import NoDropout
     from scripts._diag_helpers import require_keys
     require_keys(cfg['model'], ('num_branches',), f'cfg["model"] in {run_dir}')
-    require_keys(cfg['data'], ('num_categories',), f'cfg["data"] in {run_dir}')
     K = cfg['model']['num_branches']
-    M = cfg['data']['num_categories']
+    # CIFAR main-table configs do not store data.num_categories (20 superclasses)
+    M = cfg['data'].get('num_categories', 20)
     algo = NoDropout(num_modules=K, num_categories=M)
 
     # Build val loader (CIFAR get_dataloaders returns 2-tuple, no aug arg)
