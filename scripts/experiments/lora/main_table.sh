@@ -44,7 +44,7 @@ _read_marker() {
             echo "[rtx5090_9] $label=$v (from $MINI_BASE/$marker)"; return
         fi
     fi
-    echo "ERROR: $label not set. Either export $var_name=... or run 8a→8b→8c first."
+    echo "ERROR: $label not set. Either set $var_name=... on the command line (not exported) or run 8a→8b→8c first."
     exit 1
 }
 _read_marker BEST_PA   _best_pa.txt   BEST_PA

@@ -4,8 +4,10 @@
 #
 # Final ours config is chosen by the 5a → 5b → 5c ablation chain, which
 # writes _best_{pa,beta,se}.txt markers that this script reads. Without the
-# markers it stops with instructions; to skip the chain, export the paper's
-# final operating point directly: BEST_PA=0.6 BEST_BETA=1.0 BEST_SE=2.0.
+# markers it stops with instructions; to skip the chain, set the paper's final
+# operating point on the command line (BEST_PA=0.6 BEST_BETA=1.0 BEST_SE=2.0
+# bash scripts/experiments/vit/main_table.sh); do not leave it exported, since
+# the other chains read the same BEST_* names.
 #
 # METHOD COMPONENTS (all always-on for ours, matching paper main body):
 #   • Uniform K=46 branches (BREEDS superclass mapping)
@@ -79,7 +81,7 @@ _read_marker() {
             return
         fi
     fi
-    echo "ERROR: $label not set. Either export $var_name=... or run the"
+    echo "ERROR: $label not set. Either set $var_name=... on the command line (not exported) or run the"
     echo "5a→5b→5c ablation chain first (it writes $MINI_BASE/$marker)."
     exit 1
 }

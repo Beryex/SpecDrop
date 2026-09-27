@@ -24,7 +24,7 @@
 #   ablation_<setting>  Run only the (pa, β, SE) sweep ablations for one setting.
 #                       e.g. `bash reproduce.sh ablation_nlp`.
 #   all           cifar + nlp + vit + lora + alignment (≈1300 GPU-hours for the main tables,
-#                 ≈1800 with the sweep chains; multi-GPU strongly recommended: one seed per
+#                 ≈1850 with the sweep chains; multi-GPU strongly recommended: one seed per
 #                 GPU as below; for vit, scripts/experiments/vit/_run_gpu_{0,1,2}.sh each run
 #                 one seed's whole chain).
 #

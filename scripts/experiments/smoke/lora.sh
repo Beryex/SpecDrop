@@ -316,8 +316,8 @@ if [ "$FAILED" = "1" ]; then
 else
     echo "All 6 methods passed. You can now launch the full pipeline:"
     echo "    bash reproduce.sh lora     # single-GPU sequential: sweep chain ~145 h + main table ~235 h"
-    echo "    # main table only, per-seed parallel on 3 GPUs (~80 h; export the operating point"
-    echo "    # BEST_PA=0.8 BEST_BETA=1.0 BEST_SE=1.0 if the sweep markers are absent):"
+    echo "    # main table only, per-seed parallel on 3 GPUs (~80 h; if the sweep markers are absent,"
+    echo "    # prefix each command with BEST_PA=0.8 BEST_BETA=1.0 BEST_SE=1.0 -- per command, not exported):"
     echo "    CUDA_VISIBLE_DEVICES=0 SEEDS_OVERRIDE=42  bash scripts/experiments/lora/main_table.sh &"
     echo "    CUDA_VISIBLE_DEVICES=1 SEEDS_OVERRIDE=123 bash scripts/experiments/lora/main_table.sh &"
     echo "    CUDA_VISIBLE_DEVICES=2 SEEDS_OVERRIDE=456 bash scripts/experiments/lora/main_table.sh &"
