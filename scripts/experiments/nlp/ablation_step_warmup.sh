@@ -13,9 +13,10 @@
 # (warmup_unit='step' added in this session) changes 3-seed PPL meaningfully
 # at the Phase P lock-in config.
 #
-# Config (matches the 500M ours config [9] in rtx5090_4, scaled to 100M):
+# Config (the App. E.6 side-comparison point, from the epoch-warmup chain; the
+# 500M ours of Tab. 3 uses β = 4):
 #     pa = 0.6, pi = 0.4, SE_ratio = 0.5 (ffn=205, SE_dim=103)
-#     per-cat β = 2.0 (strict argmin from 3b)
+#     per-cat β = 2.0 (strict argmin of the epoch-warmup chain's 3b)
 #     wr = 1.0, warmup_schedule = cosine
 #     warmup_unit = 'step'   ← ONLY difference vs the 100M baseline
 #     frac_per_category computed from 100M train cache at config-gen
@@ -27,7 +28,7 @@
 #   never collides with the step-warmup 3c cells of nlp/ablation_se.sh.
 #
 # Output: outputs/rtx5090_nlp_mini_ablation/phase3d_pa0.6_beta2.0_se0.5_stepwarmup_s{seed}/
-# Per GPU: 1 run × ~70 min. Wall clock ≈ 70 min on 3 GPUs in parallel.
+# Per GPU: up to 2 runs (the epoch baseline if absent, then step) × ~70 min.
 ###############################################################################
 
 PYTHON=${PYTHON:-python}
@@ -86,7 +87,7 @@ ffn_per_branch = total_branch_ffn // 7
 fracs = compute_category_fractions(cache, num_categories=7)
 assert abs(sum(fracs) - 1.0) < 1e-4
 
-print(f'[cfg-gen] pa={PA} β={BETA} SE_ratio={SE_RATIO} warmup_unit=step')
+print(f'[cfg-gen] pa={PA} β={BETA} SE_ratio={SE_RATIO} warmup_unit={os.environ.get("WUNIT", "step")}')
 print(f'[cfg-gen] ffn_per_branch={ffn_per_branch}  SE_dim={se_dim}  '
       f'total={7*ffn_per_branch + se_dim}')
 
