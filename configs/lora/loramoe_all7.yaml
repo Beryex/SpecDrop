@@ -2,7 +2,7 @@
 # Tab. 4's LoRAMoE is FFN-only (loramoe.yaml); this all-7-linears variant is
 # disabled there and not reported.
 # LoRAMoE K=6 experts, APPLIED TO ALL 7 LINEAR MODULES (ablation only).
-# Dou 2023 ACL natively specifies FFN-only (3 MLP targets per layer); our
+# Dou et al., ACL 2024 natively specifies FFN-only (3 MLP targets per layer); our
 # main LoRAMoE config (configs/lora/loramoe.yaml) follows that.
 # This variant matches every other MoE-LoRA baseline's target-module set
 # (all 7 linears: q/k/v/o + gate/up/down) so the paper can cleanly isolate

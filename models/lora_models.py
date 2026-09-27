@@ -233,12 +233,12 @@ class HydraLoRAModel(BaseLoRAModel):
         self._inject(factory, target_modules)
 
 
-# ── 4. LoRAMoEModel (Dou 2023 ACL — FFN-only) ──────────────────────────────
+# ── 4. LoRAMoEModel (Dou et al., ACL 2024 — FFN-only) ──────────────────────────────
 
 
 class LoRAMoEModel(BaseLoRAModel):
     """K LoRA experts + learned softmax gate + balance loss. FFN-only per
-    Dou 2023 Sec 3.1 ("replace the linear layer in the FFN")."""
+    Dou et al. 2024 Sec 3.1 ("replace the linear layer in the FFN")."""
 
     def __init__(self, base_model_name: str, num_experts: int = 6,
                  rank: int = 4, alpha: float = 8.0, dropout: float = 0.05,

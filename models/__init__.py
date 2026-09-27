@@ -261,8 +261,8 @@ def build_model(cfg):
             depth=mcfg.get('depth', 12),
             num_heads=mcfg.get('num_heads', 6),
             mlp_ratio=mcfg.get('mlp_ratio', 4.0),
-            # Paper's k-WTA is designed for small keep fractions (0.1–0.25);
-            # 0.5 is outside the tested regime.
+            # Shaier et al. use p_k=0.5 for ViT MLPs; we run 0.25 (App. B.2
+            # states the deviation).
             p_keep=mcfg.get('p_keep', 0.25),
             # Routing-structure seed DECOUPLED from experiment seed.
             routing_seed=mcfg.get('routing_seed', 42),

@@ -5,9 +5,8 @@
 # Llama-3.2-1B FFN-only per-rank: 3 sites × 16 layers × (2048+8192) =
 # 491,520 r; × K=6 experts = 2,949,120 r. Per-layer gate params (bias=False,
 # 6 experts): 2×2048×6 + 8192×6 = 73,728; × 16 = 1,179,648 gate total.
-# Wait — recomputed: LoRAMoE uses a PER-SITE gate (bias=False) Linear(hidden,
-# K). 3 MLP sites × 2048 × 6 = 36,864 per layer; × 16 = 589,824 gate total.
-# For 225M budget: r ≈ 76 → 2,949,120 × 76 + 589,824 = 224.7M (−0.32%).
+# (one gate Linear(in_features, 6) per adapted linear: down_proj has in_features 8192).
+# For the 225M budget: r = 76 → 2,949,120 × 76 + 1,179,648 = 225,312,768 (Tab. 4: 225.31M).
 model:
   type: lora_moe
   base_model_name: meta-llama/Llama-3.2-1B
@@ -16,7 +15,7 @@ model:
   alpha: 152.0        # 2r
   dropout: 0.05
   balance_weight: 0.1
-  target_modules: [gate_proj, up_proj, down_proj]   # FFN-only per Dou 2023
+  target_modules: [gate_proj, up_proj, down_proj]   # FFN-only per Dou et al. 2024
   torch_dtype: bfloat16
   attn_implementation: sdpa
 algorithm:

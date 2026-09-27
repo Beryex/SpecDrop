@@ -155,7 +155,7 @@ def test_hydra_lora_backward():
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 4. LoRAMoEAdapter (Dou 2023)
+# 4. LoRAMoEAdapter (Dou et al. 2024)
 # ══════════════════════════════════════════════════════════════════════════
 
 def test_loramoe_forward_and_aux_loss():

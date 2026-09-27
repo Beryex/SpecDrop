@@ -11,7 +11,7 @@ source "$(dirname "$0")/_ensure_data.sh"
 # on GQA-aware Llama-3.2-1B):
 #   1. Single LoRA r=16           (Hu 2022 PEFT baseline, 11M — not matched)
 #   2. Single LoRA r=320           (capacity-matched upper, 225M)
-#   3. LoRAMoE K=6, r=76           (Dou 2023, FFN-only, 225M)
+#   3. LoRAMoE K=6, r=76           (Dou et al. 2024, FFN-only, 225M)
 #   4. HydraLoRA N=8, r=67         (Tian 2024, asymmetric, 226M)
 #   5. MoCLE E=4 + uni, r=63       (Gou 2024, cluster-cond, 225M)
 #   6. MB-LoRA no-routing K=20, r=16, SE=0  (arch-matched baseline, 225M)
@@ -86,8 +86,8 @@ PYEOF
 echo "[1/8] Single LoRA r=320 (capacity-matched upper)"
 run_method_from_config "single_lora_r320" "configs/lora/single_lora_r320.yaml"
 
-# [2] LoRAMoE K=6 (Dou 2023 native, r=76 → 225M on Llama-3.2-1B)
-echo "[2/8] LoRAMoE K=6 (Dou 2023)"
+# [2] LoRAMoE K=6 (Dou et al. 2024 native, r=76 → 225M on Llama-3.2-1B)
+echo "[2/8] LoRAMoE K=6 (Dou et al. 2024)"
 run_method_from_config "loramoe_k6" "configs/lora/loramoe.yaml"
 
 # [3] HydraLoRA N=8 (Tian 2024 native, r=67 → 225M on Llama-3.2-1B)
@@ -238,7 +238,7 @@ else
 fi
 
 # [8/8] APPENDIX ABLATION: LoRAMoE applied to ALL 7 linears (not just FFN-3).
-# Dou 2023 natively specifies FFN-only, which confounds ours-vs-LoRAMoE: is
+# Dou et al. 2024 natively specifies FFN-only, which confounds ours-vs-LoRAMoE: is
 # LoRAMoE's worse performance from worse routing, or from adapting 3 sites
 # instead of 7? This row isolates the routing effect by giving LoRAMoE the
 # same 7-site coverage as ours / HydraLoRA / MoCLE.

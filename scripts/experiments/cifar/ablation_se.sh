@@ -10,9 +10,9 @@
 # REQUIRES: BEST_PA and BEST_WR env vars
 #
 # Usage (3 GPUs in parallel):
-#   CUDA_VISIBLE_DEVICES=0 BEST_PA=0.9 BEST_WR=0 SEEDS_OVERRIDE=42  bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s42.txt
-#   CUDA_VISIBLE_DEVICES=1 BEST_PA=0.9 BEST_WR=0 SEEDS_OVERRIDE=123 bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s123.txt
-#   CUDA_VISIBLE_DEVICES=2 BEST_PA=0.9 BEST_WR=0 SEEDS_OVERRIDE=456 bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s456.txt
+#   CUDA_VISIBLE_DEVICES=0 BEST_PA=0.7 BEST_WR=1.0 SEEDS_OVERRIDE=42  bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s42.txt
+#   CUDA_VISIBLE_DEVICES=1 BEST_PA=0.7 BEST_WR=1.0 SEEDS_OVERRIDE=123 bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s123.txt
+#   CUDA_VISIBLE_DEVICES=2 BEST_PA=0.7 BEST_WR=1.0 SEEDS_OVERRIDE=456 bash scripts/experiments/cifar/ablation_se.sh 2>&1 | tee log_1c_s456.txt
 #
 # SE ratio configs (all ~1.74M params):
 #   SE 0.25x:  3 SE blocks, bc=[4,7,14] → 1.735M (0.999x)
@@ -27,12 +27,12 @@
 # Validate env vars
 if [ -z "$BEST_PA" ]; then
     echo "ERROR: BEST_PA env var required. Set it to best p_active from Phase A."
-    echo "Example: BEST_PA=0.9 BEST_WR=0 bash $0"
+    echo "Example: BEST_PA=0.7 BEST_WR=1.0 bash $0"
     exit 1
 fi
 if [ -z "$BEST_WR" ]; then
     echo "ERROR: BEST_WR env var required. Set it to best warmup_ratio from Phase B."
-    echo "Example: BEST_PA=0.9 BEST_WR=0 bash $0"
+    echo "Example: BEST_PA=0.7 BEST_WR=1.0 bash $0"
     exit 1
 fi
 PYTHON=${PYTHON:-python}

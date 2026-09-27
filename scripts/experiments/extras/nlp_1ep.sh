@@ -106,7 +106,7 @@ cfg = {
     'data': {$COMMON_DATA},
 }"
 
-echo "[4/8] SMoE-Dropout LM (paper-native N=16, k_init=1, linear k-schedule, no expert-dropout)"
+echo "[4/8] SMoE-Dropout LM (N=16, k_init=1, fixed random router, no expert-dropout; under torch.compile the k-schedule is not applied: trains at k=1, evaluates at k=N, App. B.2)"
 run_experiment "smoe_dropout" "
 cfg = {
     'model': {'type': 'smoe_dropout_transformer_lm', $LM_SHARED, 'num_experts': 16, 'ffn_dim_per_expert': 96, 'k_init': 1, 'expert_drop_prob': 0.0, 'dropout': 0.1},

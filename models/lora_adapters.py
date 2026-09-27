@@ -8,7 +8,7 @@ Adapters implemented here:
   - SingleLoRAAdapter       (Hu 2022 vanilla)
   - MultiBranchSoftSpecDropAdapter  (OURS + no-routing; uses (B, K) soft mask)
   - HydraLoRAAdapter        (Tian 2024 NeurIPS: 1 shared A + N B + learned gate)
-  - LoRAMoEAdapter          (Dou 2023 ACL: K experts + softmax gate + balance loss)
+  - LoRAMoEAdapter          (Dou et al., ACL 2024: K experts + softmax gate + balance loss)
   - MoCLEAdapter            (Gou 2024: E task experts + 1 universal,
                              cluster-conditional learned gate, top-1 over tasks)
 
@@ -158,7 +158,7 @@ class HydraLoRAAdapter(nn.Module):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 4. LoRAMoEAdapter — Dou 2023 ACL (K experts, softmax gate, balance loss)
+# 4. LoRAMoEAdapter — Dou et al., ACL 2024 (K experts, softmax gate, balance loss)
 # ══════════════════════════════════════════════════════════════════════════
 
 class LoRAMoEAdapter(nn.Module):
