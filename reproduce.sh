@@ -17,7 +17,7 @@
 #                 (table rows ~850 GPU-hours; sweep chain ~225; ImageNet-1K download is
 #                 one-time, ~167 GB plus a same-size prepared copy).
 #   lora          Table 4: SuperNI Llama-3.2-1B + LoRA, 7 methods × 3 seeds × 3 epochs
-#                 (main table ~235 GPU-hours; sweep chain ~115; HF Llama download + SuperNI
+#                 (main table ~235 GPU-hours; sweep chain ~145; HF Llama download + SuperNI
 #                 tasks are one-time).
 #   alignment     Align columns of Tables 1-4: branch-category alignment (~24 GPU-hours
 #                 single-GPU; uses pre-trained checkpoints from cifar/nlp/vit/lora targets).
