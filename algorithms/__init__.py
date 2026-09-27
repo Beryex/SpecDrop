@@ -8,8 +8,8 @@ algorithms remain in the main repo:
                               warmup and fixed-denominator merge
 
 All adapted MoE-routing algorithms (hash_routing / learned_routing / soft_moe_routing /
-mod_squad / comet_routing / smoe_dropout / specdrop / random_dropout) have been moved
-to `archive/algorithms/` since their faithful re-implementations now live as dedicated
+mod_squad / comet_routing / smoe_dropout / specdrop / random_dropout) were retired (not
+shipped in this release) since their faithful re-implementations now live as dedicated
 models under `models/{switch,hash_layers,smoe_dropout,demix}_transformer_lm.py` and
 `models/{mod_squad,soft_moe,comet}_vit.py`.
 """
@@ -115,6 +115,5 @@ def build_algorithm(cfg):
             f"Unknown algorithm type: {algo_type!r}. Available: "
             f"{{'none', 'no_dropout', 'soft_specdrop', 'stochastic_specdrop', "
             f"'random_dropout', 'hard_category'}}. Faithful MoE baselines are "
-            f"separate models under models/. See archive/algorithms/ for the "
-            f"adapted (non-native) variants if needed for Appendix A ablations."
+            f"separate models under models/."
         )

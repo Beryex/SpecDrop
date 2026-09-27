@@ -56,7 +56,7 @@ def _assert_match(params, ref, name):
 # ─── NLP (4 faithful models) ─────────────────────────────────────────────────
 
 def test_switch_lm():
-    # Paper-canonical N=32 with param-matched narrow experts (32×48 = 1536 dense).
+    # N=32 (Switch-Base uses 128) with param-matched narrow experts (32×48 = 1536 dense).
     m = SwitchTransformerLM(
         vocab_size=50257, hidden_dim=384, num_layers=6, num_heads=6,
         num_experts=32, ffn_dim_per_expert=48, max_seq_len=512,
@@ -87,7 +87,7 @@ def test_switch_lm():
 
 
 def test_hash_layers_lm():
-    # Paper-canonical N=8, param-matched (8×192 = 1536 dense).
+    # Scaled-down N=8 (Roller et al.'s smallest is 16), param-matched (8×192 = 1536 dense).
     m = HashLayersTransformerLM(
         vocab_size=50257, hidden_dim=384, num_layers=6, num_heads=6,
         num_experts=8, ffn_dim_per_expert=192, max_seq_len=512, hash_seed=42)

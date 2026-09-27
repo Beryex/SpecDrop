@@ -3,7 +3,7 @@
 All LoRA methods in this track (SingleLoRA, MultiBranch-LoRA (ours + no-routing),
 HydraLoRA, LoRAMoE, MoCLE) share the same skeleton:
 
-  1. Load a frozen HF CausalLM (Llama-3.2-3B base by default).
+  1. Load a frozen HF CausalLM (Llama-3.2-1B in the paper).
   2. Walk the model tree, locate target linear modules (q/k/v/o/gate/up/down),
      and replace each with a wrapper that adds a method-specific LoRA adapter
      in parallel with the frozen base: `y = base_linear(x) + adapter(x, ...)`.

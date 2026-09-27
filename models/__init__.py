@@ -146,7 +146,7 @@ def build_model(cfg):
             hidden_dim=mcfg.get('hidden_dim', 384),
             num_layers=mcfg.get('num_layers', 6),
             num_heads=mcfg.get('num_heads', 6),
-            # Paper-canonical N=32, param-matched (32×48=1536).
+            # N=32 (one of Fedus et al.'s expert counts; Switch-Base uses 128), param-matched (32×48=1536).
             num_experts=mcfg.get('num_experts', 32),
             ffn_dim_per_expert=mcfg.get('ffn_dim_per_expert', 48),
             max_seq_len=mcfg.get('max_seq_len', 512),
@@ -159,7 +159,7 @@ def build_model(cfg):
             hidden_dim=mcfg.get('hidden_dim', 384),
             num_layers=mcfg.get('num_layers', 6),
             num_heads=mcfg.get('num_heads', 6),
-            # Paper-canonical N=8, param-matched to 1536 dense FFN (8×192).
+            # Scaled-down N=8 (Roller et al.'s smallest is 16), param-matched to 1536 dense FFN (8×192).
             num_experts=mcfg.get('num_experts', 8),
             ffn_dim_per_expert=mcfg.get('ffn_dim_per_expert', 192),
             max_seq_len=mcfg.get('max_seq_len', 512),

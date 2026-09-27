@@ -45,7 +45,7 @@ class SoftMoEFFN(nn.Module):
         if normalize:
             self.scale = nn.Parameter(torch.ones(1))
 
-        # NOTE (Puigcerver adaptation disclosed in Appendix A): the original
+        # NOTE (Puigcerver adaptation, not discussed in the paper): the original
         # Soft MoE paper does not explicitly specify how the CLS token is routed.
         # Our implementation puts CLS through the same dispatch/combine as patch
         # tokens. Adding a dedicated dense FFN for CLS would double the MLP param
