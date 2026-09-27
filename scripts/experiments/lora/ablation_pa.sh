@@ -152,7 +152,7 @@ for pa in ('0.5', '0.6', '0.7', '0.8', '0.9', '1.0'):
         sd = (sum((x-m)**2 for x in vals)/(len(vals)-1))**0.5 if len(vals) > 1 else 0.0  # sample std, as App. E.8
         print(f"{pa:>4}  {m:>14.4f}  {sd:>6.4f}  {len(vals)}")
 print(f"\n[8a ANCHOR_SE={os.environ['ANCHOR_SE']}] strict argmax on eval_rouge_l "
-      f"(exclude pa=0.5 mech-OFF + pa=1.0 hard-routing degenerate) computed by "
+      f"(excluding pa=0.5 mechanism-OFF and pa=1.0, App. E.8) computed by "
       f"8b via scripts.ablation_chain when all 3 seeds land.")
 EOF
 echo "Done: $(date)"

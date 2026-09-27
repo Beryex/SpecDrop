@@ -5,13 +5,11 @@ source "$(dirname "$0")/_ensure_data.sh"
 #
 # Mirror of ViT 5b for LoRA. Barriers on 8a@SE=1.0 (18 results.json), picks
 # best_pa via strict argmax on eval_rouge_l (Wang 2022 Tk-Instruct canonical
-# metric for SuperNI). TWO endpoints excluded by design:
-#   - pa=0.5 (mech-OFF degenerate, g = pa - pi = 0 → per-cat inactive ∀β)
-#   - pa=1.0 (mech-DEGENERATE: pi=0 → S=1, balanced-cat gap_c=1 → p_a^c=1,
-#     p_i^c=0 = HARD routing. Soft fixed-denominator merge — SpecDrop's
-#     core claim — collapses to deterministic top-1-by-assignment routing.
-#     We exclude this endpoint so 8b/8c hyperparam search lands inside the
-#     soft-merge regime where the method's mechanism actually applies.)
+# metric for SuperNI), excluding two endpoints:
+#   - pa=0.5 (mechanism-OFF: g = pa - pi = 0 → per-cat inactive ∀β; a priori)
+#   - pa=1.0 (pi=0; excluded after the 8a sweep, App. E.8. At β=1 the
+#     per-category formula keeps p_i^c>0 for clusters more frequent than
+#     1/K, so this cell is not pure hard routing.)
 # Tie-break: smaller pa wins.
 #
 # Sweep: β ∈ {0, 1.0, 2.0, 4.0}. β=1.0 cell reuses 8a result (free reference).
@@ -47,7 +45,7 @@ if [ -z "$BEST_PA" ]; then
         --seeds 42,123,456 --pa-values 0.5,0.6,0.7,0.8,0.9,1.0 \
         --anchor-se "$ANCHOR_SE" --phase-prefix 8 --poll 60 --max-wait "$CHAIN_MAX_WAIT" || chain_wait_failed
 
-    # Exclude pa=0.5 (mech-OFF, g=0) AND pa=1.0 (mech-degenerate, hard routing).
+    # Exclude pa=0.5 (mechanism-OFF, g=0) and pa=1.0 (excluded after the 8a sweep, App. E.8).
     BEST_PA=$($PYTHON -m scripts.ablation_chain best --phase 5a --base "$OUTDIR_BASE" \
         --seeds 42,123,456 --pa-values 0.5,0.6,0.7,0.8,0.9,1.0 \
         --anchor-se "$ANCHOR_SE" --phase-prefix 8 --exclude-pa 0.5,1.0 \
