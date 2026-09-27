@@ -317,7 +317,7 @@ def main():
     out_json = args.out_json or f'outputs/analysis/lora_diag/{os.path.basename(args.run_dir)}.json'
     os.makedirs(os.path.dirname(out_json), exist_ok=True)
     config_summary = {
-        'algorithm': 'soft_specdrop',
+        'algorithm': algo_type,
         'p_active': acfg.get('p_active'),
         'amplification_beta': acfg.get('amplification_beta'),
         'shared_expert_rank': cfg['model'].get('shared_expert_rank', 0),
